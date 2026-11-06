@@ -1,0 +1,22 @@
+{
+  "name": "vrm-poser",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "VRM 归一化骨骼姿势台：一套姿势 JSON 驱动任意 VRM 角色",
+  "scripts": {
+    "dev": "vite --port 5273 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --port 5274 --strictPort"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^1.2.2",
+    "@pixiv/three-vrm": "^3.5.5",
+    "mmd-parser": "^1.1.4",
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^25.16.0",
+    "vite": "^8.3.5"
+  }
+}

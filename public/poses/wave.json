@@ -1,0 +1,19 @@
+{
+  "format": "vrm-pose/1",
+  "name": "招手",
+  "meta": {
+    "rig": "mannequin",
+    "scaleHint": 1,
+    "note": "肩骨先转 18° 带起手臂，上臂再抬 60°，手肘外翻 18°；在 VRM 与 PMX(A-pose) 上都验证过"
+  },
+  "bones": {
+    "leftShoulder": [0, 0, 0.1564, 0.9877],
+    "leftUpperArm": [0, 0, 0.5, 0.866],
+    "leftLowerArm": [0, 0, -0.1564, 0.9877],
+    "leftHand": [0, 0, 0.0872, 0.9962],
+    "rightUpperArm": [0, 0, 0.5878, 0.809],
+    "rightLowerArm": [-0.0872, 0, 0, 0.9962],
+    "head": [0, 0, -0.0349, 0.9994],
+    "spine": [0.0175, 0, 0, 0.9998]
+  }
+}

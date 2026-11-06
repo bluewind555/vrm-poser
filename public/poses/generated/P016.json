@@ -1,0 +1,100 @@
+{
+  "format": "vrm-pose/1",
+  "name": "站立・双手撩发",
+  "meta": {
+    "source": "ai-pose-gallery-zh",
+    "confidence": {
+      "spine": 1,
+      "chest": 1,
+      "upperChest": 1,
+      "neck": 1,
+      "leftUpperArm": 1,
+      "leftLowerArm": 0.97,
+      "rightUpperArm": 1,
+      "rightLowerArm": 0.98,
+      "leftUpperLeg": 0.96,
+      "leftLowerLeg": 0.96,
+      "leftFoot": 0.97,
+      "rightUpperLeg": 0.96,
+      "rightLowerLeg": 0.96,
+      "rightFoot": 0.93
+    },
+    "lying": false,
+    "sourceId": "P016",
+    "views": 3
+  },
+  "bones": {
+    "leftShoulder": [
+      0,
+      -0.02656,
+      -0.00893,
+      0.99961
+    ],
+    "leftUpperArm": [
+      0,
+      -0.19495,
+      0.35849,
+      0.91295
+    ],
+    "leftLowerArm": [
+      0,
+      0.07069,
+      0.76689,
+      0.63787
+    ],
+    "rightShoulder": [
+      0,
+      -0.02656,
+      -0.00893,
+      0.99961
+    ],
+    "rightUpperArm": [
+      0,
+      0.24783,
+      -0.27012,
+      0.93039
+    ],
+    "rightLowerArm": [
+      0,
+      -0.15895,
+      -0.77689,
+      0.60924
+    ],
+    "leftUpperLeg": [
+      -0.04892,
+      0,
+      0.06138,
+      0.99691
+    ],
+    "leftLowerLeg": [
+      0.09964,
+      0,
+      0.02808,
+      0.99463
+    ],
+    "leftFoot": [
+      0.09764,
+      0.14587,
+      0.07293,
+      0.98177
+    ],
+    "rightUpperLeg": [
+      -0.0559,
+      0,
+      -0.0258,
+      0.9981
+    ],
+    "rightLowerLeg": [
+      0.16116,
+      0,
+      -0.0389,
+      0.98616
+    ],
+    "rightFoot": [
+      0.02289,
+      -0.04726,
+      -0.02363,
+      0.99834
+    ]
+  }
+}

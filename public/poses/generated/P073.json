@@ -1,0 +1,100 @@
+{
+  "format": "vrm-pose/1",
+  "name": "后仰・站姿挺背",
+  "meta": {
+    "source": "ai-pose-gallery-zh",
+    "confidence": {
+      "spine": 1,
+      "chest": 1,
+      "upperChest": 1,
+      "neck": 1,
+      "leftUpperArm": 1,
+      "leftLowerArm": 0.98,
+      "rightUpperArm": 0.99,
+      "rightLowerArm": 0.98,
+      "leftUpperLeg": 0.98,
+      "leftLowerLeg": 0.97,
+      "leftFoot": 0.95,
+      "rightUpperLeg": 0.97,
+      "rightLowerLeg": 0.97,
+      "rightFoot": 0.95
+    },
+    "lying": false,
+    "sourceId": "P073",
+    "views": 3
+  },
+  "bones": {
+    "leftShoulder": [
+      0,
+      0.02073,
+      0.05869,
+      0.99806
+    ],
+    "leftUpperArm": [
+      0,
+      0.08791,
+      -0.40442,
+      0.91034
+    ],
+    "leftLowerArm": [
+      0,
+      -0.30005,
+      -0.72278,
+      0.62254
+    ],
+    "rightShoulder": [
+      0,
+      0.02073,
+      0.05869,
+      0.99806
+    ],
+    "rightUpperArm": [
+      0,
+      -0.0274,
+      0.34946,
+      0.93655
+    ],
+    "rightLowerArm": [
+      0,
+      0.41106,
+      0.53235,
+      0.74002
+    ],
+    "leftUpperLeg": [
+      -0.0391,
+      0,
+      0.046,
+      0.99818
+    ],
+    "leftLowerLeg": [
+      0.15321,
+      0,
+      -0.00752,
+      0.98816
+    ],
+    "leftFoot": [
+      -0.05433,
+      0.10129,
+      0.05064,
+      0.99208
+    ],
+    "rightUpperLeg": [
+      -0.08636,
+      0,
+      -0.02839,
+      0.99586
+    ],
+    "rightLowerLeg": [
+      0.15996,
+      0,
+      -0.01283,
+      0.98704
+    ],
+    "rightFoot": [
+      -0.03181,
+      -0.06593,
+      -0.03297,
+      0.99677
+    ]
+  }
+}

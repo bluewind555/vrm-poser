@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VRM 姿势台</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🤸</text></svg>" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+
+    <aside id="panel">
+      <header class="panel-head">
+        <h1>VRM 姿势台</h1>
+        <p id="status">初始化…</p>
+        <p id="app-version" class="hint small"></p>
+      </header>
+
+      <section class="block">
+        <div class="row">
+          <label class="btn file">
+            载入模型
+            <input id="file" type="file" accept=".vrm,.glb,.pmx" />
+          </label>
+          <button id="btn-mannequin" class="btn ghost">用人偶</button>
+        </div>
+        <label class="btn ghost wide file">
+          载入文件夹（PMX + 贴图）
+          <input id="folder" type="file" webkitdirectory multiple />
+        </label>
+        <p class="hint small">模之屋下载的模型解压后，直接选<b>整个文件夹</b>（或把文件夹拖进画面），贴图会一起载入。</p>
+        <label class="btn ghost wide file needs-avatar">
+          从图片生成姿势
+          <input id="pose-image" type="file" accept="image/*" multiple />
+        </label>
+        <p id="pose-image-hint" class="hint small">支持照片/线稿。可一次选多张（同一姿势的不同角度）自动融合；估计不准的关节会在下面标出来。</p>
+        <button id="btn-frame" class="btn ghost wide needs-avatar">重置视角（双击画面同效）</button>
+      </section>
+
+      <section class="block">
+        <label class="field-label" for="bone">
+          骨骼 <span id="bone-hint" class="hint"></span>
+        </label>
+        <select id="bone"></select>
+
+        <div class="axis">
+          <span>X</span>
+          <input id="rot-x" type="range" min="-180" max="180" step="0.5" />
+          <output id="rot-x-v">0°</output>
+        </div>
+        <div class="axis">
+          <span>Y</span>
+          <input id="rot-y" type="range" min="-180" max="180" step="0.5" />
+          <output id="rot-y-v">0°</output>
+        </div>
+        <div class="axis">
+          <span>Z</span>
+          <input id="rot-z" type="range" min="-180" max="180" step="0.5" />
+          <output id="rot-z-v">0°</output>
+        </div>
+
+        <div class="row">
+          <button id="btn-bone-reset" class="btn ghost needs-avatar">该骨骼归零</button>
+          <button id="btn-all-reset" class="btn ghost needs-avatar">全部归零</button>
+        </div>
+        <div id="confidence" class="confidence"></div>
+      </section>
+
+      <section class="block">
+        <label class="field-label" for="hips-y">髋部高度 <output id="hips-y-v">0.00 m</output></label>
+        <input id="hips-y" type="range" min="-0.6" max="0.6" step="0.005" value="0" />
+        <button id="btn-ground" class="btn ghost wide needs-avatar">接地校正</button>
+      </section>
+
+      <section class="block">
+        <div class="row between">
+          <h2>渲染调节</h2>
+          <button id="btn-tune-reset" class="btn ghost small">重置</button>
+        </div>
+
+        <label class="toggle">
+          <input id="tune-outline-on" type="checkbox" checked />
+          <span>描边</span>
+        </label>
+
+        <div class="axis slim" title="描边粗细（世界单位）">
+          <span>描边</span>
+          <input id="tune-outline" type="range" min="0" max="0.012" step="0.0005" value="0.002" />
+          <output id="tune-outline-v">0.0020</output>
+        </div>
+        <div class="axis slim" title="明暗下限：1.0 纯平，0.55 对比最强">
+          <span>立体</span>
+          <input id="tune-shading" type="range" min="0.55" max="1" step="0.01" value="0.85" />
+          <output id="tune-shading-v">0.85</output>
+        </div>
+        <div class="axis slim" title="主光强度（决定明暗方向）">
+          <span>主光</span>
+          <input id="tune-key" type="range" min="0" max="3" step="0.05" value="2" />
+          <output id="tune-key-v">2.00</output>
+        </div>
+        <div class="axis slim" title="环境光强度（整体提亮，过大会发灰）">
+          <span>环境</span>
+          <input id="tune-ambient" type="range" min="0" max="2.5" step="0.05" value="1.1" />
+          <output id="tune-ambient-v">1.10</output>
+        </div>
+        <div class="axis slim" title="轮廓光强度（背面补光，边缘更立体）">
+          <span>轮廓</span>
+          <input id="tune-rim" type="range" min="0" max="2.5" step="0.05" value="0.9" />
+          <output id="tune-rim-v">0.90</output>
+        </div>
+        <div class="axis slim" title="球面贴图强度：头发/金属件的高光反射（模型自带 SPH/SPA 才有效）">
+          <span>高光</span>
+          <input id="tune-sph" type="range" min="0" max="1.5" step="0.05" value="0.55" />
+          <output id="tune-sph-v">0.55</output>
+        </div>
+        <div class="axis slim" title="脚下接触阴影浓度：让角色更踩得住地面">
+          <span>接地</span>
+          <input id="tune-contact" type="range" min="0" max="1" step="0.05" value="0.85" />
+          <output id="tune-contact-v">0.85</output>
+        </div>
+        <p class="hint small">这里调的是观感，不会改动模型文件；设置会存在浏览器里。</p>
+      </section>
+
+      <section class="block">
+        <div class="row between">
+          <h2>姿势库</h2>
+          <button id="btn-save" class="btn ghost small needs-avatar">存为预设</button>
+        </div>
+        <div class="row">
+          <button id="btn-mirror" class="btn ghost needs-avatar">镜像</button>
+          <button id="btn-overwrite" class="btn ghost needs-avatar">覆盖保存</button>
+        </div>
+        <button id="btn-revert" class="btn ghost wide needs-avatar">撤销此姿势的修改</button>
+        <div id="presets" class="presets"></div>
+        <button id="btn-gallery" class="btn ghost wide needs-avatar">打开姿势库画廊</button>
+        <p class="hint small">内置预设已按官方示例 VRM 校准；换成你自己的模型后，因比例差异可能仍需微调。</p>
+      </section>
+
+      <section class="block">
+        <div class="row between">
+          <h2>姿势 JSON</h2>
+          <button id="btn-copy" class="btn ghost small needs-avatar">复制当前</button>
+        </div>
+        <textarea id="json" spellcheck="false" placeholder="粘贴姿势 JSON，然后点下面的按钮应用"></textarea>
+        <button id="btn-apply" class="btn wide needs-avatar">应用文本中的姿势</button>
+      </section>
+    </aside>
+
+    <div id="hint">拖 .vrm / .glb 进画面载入 · 左键旋转 · 滚轮缩放</div>
+
+    <div id="gallery" class="gallery-overlay">
+      <div class="gallery-panel">
+        <header class="gallery-head">
+          <h2>姿势库</h2>
+          <input id="gallery-search" type="search" placeholder="搜索姿势 / 分类 / 标签…" />
+          <span id="gallery-count" class="hint small"></span>
+          <button id="gallery-hidden" class="btn ghost small" hidden>显示已隐藏</button>
+          <button id="gallery-rebake" class="btn ghost small">重烤缩略图</button>
+          <button id="gallery-close" class="btn ghost small">关闭</button>
+        </header>
+        <div id="gallery-grid" class="gallery-grid"></div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
+
+
+
+
+
+

@@ -1,0 +1,27 @@
+node_modules/
+dist/
+.npm-cache/
+.edge-profile*/
+.edge-gpu/
+.edge-*.txt
+.dev*.log
+.prev*.log
+.srv*.log
+shots/
+# 第三方模型（禁止再配布）：只留本地，不入库
+public/models/weilina/
+public/models/xun/
+
+# 自动化测试的临时产物（浏览器配置目录每个上百 MB，不要留在项目里）
+.edge-look*/
+.edge-look
+# MediaPipe 姿态估计：模型 + WASM 约 33 MB，本地留用
+public/models/mediapipe/
+# 参考图（第三方版权，仅本地测试）
+public/models/posedata/
+.tmp-posedata/
+# 批量生成的参考图（第三方版权，仅本地）
+public/models/batch/
+# 官方示例模型：许可未确认，不入库（见 docs/ASSETS.md）
+public/models/sample-vrm1.vrm
+

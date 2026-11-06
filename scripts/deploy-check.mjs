@@ -1,0 +1,11 @@
+const check = async (u) => { try { const r = await fetch("http://127.0.0.1:5280" + u); return r.status; } catch { return "ERR"; } };
+console.log("index      :", await check("/"));
+console.log("model task :", await check("/models/mediapipe/pose_landmarker_lite.task"));
+console.log("wasm       :", await check("/models/mediapipe/wasm/vision_wasm_internal.wasm"));
+console.log("ref image  :", await check("/models/posedata/P001_front.png"));
+const html = await (await fetch("http://127.0.0.1:5280/")).text();
+console.log("img2pose UI:", html.includes('id="pose-image"') ? "ok" : "MISSING");
+const mm = html.match(/src="([^"]+\.js)"/);
+const t = await (await fetch("http://127.0.0.1:5280" + mm[1])).text();
+console.log("v17        :", t.includes("v17 · 2026-11-06") ? "ok" : "MISSING");
+console.log("PoseLandmarker in bundle:", t.includes("pose_landmarker_lite.task") ? "ok" : "MISSING");

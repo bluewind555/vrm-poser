@@ -1,0 +1,15 @@
+import puppeteer from "puppeteer-core";
+const b = await puppeteer.connect({ browserURL: "http://127.0.0.1:9239", defaultViewport: null });
+const p = await b.newPage();
+await p.setViewport({ width: 1280, height: 900 });
+await p.goto("http://localhost:5273/?cb=" + Date.now(), { waitUntil: "domcontentloaded", timeout: 90000 });
+await p.waitForFunction("window.__poserReady === true", { timeout: 180000, polling: 300 });
+await p.waitForFunction("!window.__pmxTextures || window.__pmxTextures.loaded >= window.__pmxTextures.total", { timeout: 60000 }).catch(() => {});
+await new Promise((r) => setTimeout(r, 1500));
+await p.evaluate(() => indexedDB.deleteDatabase("vrm-poser-thumbs"));
+await p.evaluate(() => document.getElementById("btn-gallery").click());
+await p.waitForFunction(() => document.querySelectorAll(".pose-thumb.ready").length >= 3, { timeout: 60000, polling: 400 }).catch(() => {});
+console.log(JSON.stringify(await p.evaluate(() => ({ ready: document.querySelectorAll(".pose-thumb.ready").length }))));
+await p.screenshot({ path: "shots/gallery2.png" });
+await p.close();
+await b.disconnect();

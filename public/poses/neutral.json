@@ -1,0 +1,18 @@
+{
+  "format": "vrm-pose/1",
+  "name": "自然站立",
+  "meta": {
+    "rig": "mannequin",
+    "scaleHint": 1,
+    "note": "双臂自然下垂、手肘微屈；在人偶上标定，换真模型后需重摆"
+  },
+  "bones": {
+    "leftUpperArm": [0, 0, -0.5878, 0.809],
+    "rightUpperArm": [0, 0, 0.5878, 0.809],
+    "leftLowerArm": [-0.0872, 0, 0, 0.9962],
+    "rightLowerArm": [-0.0872, 0, 0, 0.9962],
+    "leftUpperLeg": [0.0175, 0, 0, 0.9998],
+    "rightUpperLeg": [0.0175, 0, 0, 0.9998],
+    "spine": [0.0175, 0, 0, 0.9998]
+  }
+}

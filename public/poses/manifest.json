@@ -1,0 +1,157 @@
+{
+  "format": "vrm-poses/1",
+  "poses": [
+    {
+      "id": "neutral",
+      "name": "自然站立",
+      "category": "站姿",
+      "tags": [
+        "基础",
+        "站"
+      ],
+      "file": "/poses/neutral.json"
+    },
+    {
+      "id": "wave",
+      "name": "招手",
+      "category": "站姿",
+      "tags": [
+        "手",
+        "问候"
+      ],
+      "file": "/poses/wave.json"
+    },
+    {
+      "id": "sit",
+      "name": "坐姿",
+      "category": "坐姿",
+      "tags": [
+        "坐",
+        "地面"
+      ],
+      "file": "/poses/sit.json"
+    },
+    {
+      "id": "gen-P010",
+      "name": "手抚脚踝",
+      "category": "坐姿",
+      "tags": [
+        "图片生成",
+        "2视图"
+      ],
+      "file": "/poses/generated/P010.json",
+      "generated": true,
+      "flags": []
+    },
+    {
+      "id": "gen-P016",
+      "name": "站立・双手撩发",
+      "category": "站姿",
+      "tags": [
+        "图片生成",
+        "3视图"
+      ],
+      "file": "/poses/generated/P016.json",
+      "generated": true,
+      "flags": []
+    },
+    {
+      "id": "gen-P037",
+      "name": "单膝跪・仰望",
+      "category": "跪立",
+      "tags": [
+        "图片生成",
+        "2视图"
+      ],
+      "file": "/poses/generated/P037.json",
+      "generated": true,
+      "flags": []
+    },
+    {
+      "id": "gen-P046",
+      "name": "侧坐・手扶脸颊",
+      "category": "侧坐・女孩坐",
+      "tags": [
+        "图片生成",
+        "2视图"
+      ],
+      "file": "/poses/generated/P046.json",
+      "generated": true,
+      "flags": []
+    },
+    {
+      "id": "gen-P050",
+      "name": "侧卧・托腮",
+      "category": "趴卧",
+      "tags": [
+        "图片生成",
+        "1视图"
+      ],
+      "file": "/poses/generated/P050.json",
+      "generated": true,
+      "flags": [
+        "lying"
+      ]
+    },
+    {
+      "id": "gen-P063",
+      "name": "蹲姿・托腮",
+      "category": "蹲姿",
+      "tags": [
+        "图片生成",
+        "2视图"
+      ],
+      "file": "/poses/generated/P063.json",
+      "generated": true,
+      "flags": []
+    },
+    {
+      "id": "gen-P067",
+      "name": "前倾・手扶膝",
+      "category": "前倾",
+      "tags": [
+        "图片生成",
+        "1视图"
+      ],
+      "file": "/poses/generated/P067.json",
+      "generated": true,
+      "flags": []
+    },
+    {
+      "id": "gen-P073",
+      "name": "后仰・站姿挺背",
+      "category": "后仰・挺背",
+      "tags": [
+        "图片生成",
+        "3视图"
+      ],
+      "file": "/poses/generated/P073.json",
+      "generated": true,
+      "flags": []
+    },
+    {
+      "id": "gen-P077",
+      "name": "扭身・站姿展臂",
+      "category": "扭身",
+      "tags": [
+        "图片生成",
+        "3视图"
+      ],
+      "file": "/poses/generated/P077.json",
+      "generated": true,
+      "flags": []
+    },
+    {
+      "id": "gen-P001",
+      "name": "后仰坐・单膝立起",
+      "category": "坐姿",
+      "tags": [
+        "图片生成",
+        "3视图"
+      ],
+      "file": "/poses/generated/P001.json",
+      "generated": true,
+      "flags": []
+    }
+  ]
+}

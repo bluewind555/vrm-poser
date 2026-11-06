@@ -1,0 +1,24 @@
+{
+  "format": "vrm-pose/1",
+  "name": "坐姿",
+  "meta": {
+    "rig": "mannequin",
+    "scaleHint": 1,
+    "note": "髋部下沉 + 大腿前抬 85°、小腿回折 85°，演示 hips 平移参与姿势"
+  },
+  "hips": [0, -0.38, 0],
+  "bones": {
+    "leftUpperLeg": [-0.6756, 0, 0, 0.7373],
+    "rightUpperLeg": [-0.6756, 0, 0, 0.7373],
+    "leftLowerLeg": [0.6756, 0, 0, 0.7373],
+    "rightLowerLeg": [0.6756, 0, 0, 0.7373],
+    "leftFoot": [0.0872, 0, 0, 0.9962],
+    "rightFoot": [0.0872, 0, 0, 0.9962],
+    "leftUpperArm": [0, 0, -0.5878, 0.809],
+    "rightUpperArm": [0, 0, 0.5878, 0.809],
+    "leftLowerArm": [-0.0872, 0, 0, 0.9962],
+    "rightLowerArm": [-0.0872, 0, 0, 0.9962],
+    "spine": [0.0698, 0, 0, 0.9976],
+    "chest": [0.0349, 0, 0, 0.9994]
+  }
+}

@@ -1,0 +1,10 @@
+import fs from "node:fs";
+import { MMDParser } from "mmd-parser";
+const buf = fs.readFileSync("public/models/weilina/维琳娜6.pmx");
+const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+const m = new MMDParser.Parser().parsePmx(ab, true);
+console.log("sphere usage:");
+const rows = m.materials.map((x, i) => ({ i, name: x.name, sph: x.sphereTextureIndex, mode: x.sphereMode, toon: x.toonIndex }));
+console.log(rows.filter(r => r.sph >= 0).map(r => `${r.i} ${r.name} sph=${r.sph} mode=${r.mode}`).join("\n") || "(none)");
+console.log("total materials with sph:", rows.filter(r => r.sph >= 0).length, "/", rows.length);
+console.log("textures:", m.textures.map((t, i) => `${i}:${t}`).join(" | "));

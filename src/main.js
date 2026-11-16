@@ -16,7 +16,7 @@ import { createGallery } from './gallery.js';
 import { createModelLibrary } from './modellib.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v28 · 2026-11-16';
+const APP_VERSION = 'v29 · 2026-11-16';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -51,9 +51,11 @@ const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.target.set(0, 1.0, 0);
-controls.minDistance = 0.5;
+controls.minDistance = 0.35;
 controls.maxDistance = 12;
-controls.maxPolarAngle = Math.PI * 0.495;
+// 允许 360° 观察：一直转到几乎正下方（地面会在相机低于地面时自动隐藏）
+controls.minPolarAngle = 0;
+controls.maxPolarAngle = Math.PI * 0.995;
 
 // ---------- 光照 / 地面 ----------
 const hemi = new THREE.HemisphereLight(0xc8dbff, 0x2a2f3a, 1.1);
@@ -134,6 +136,11 @@ const _footR = new THREE.Vector3();
 
 function updateContactShadow() {
   if (!avatar || !tuning) {
+    contactShadow.visible = false;
+    return;
+  }
+  // 相机跑到地面以下时，地面都藏起来了，阴影也别画
+  if (camera.position.y < 0.03) {
     contactShadow.visible = false;
     return;
   }
@@ -744,6 +751,12 @@ function tick() {
     updateContactShadow();
   }
   controls.update();
+
+  // 相机钻到地面以下时，把地板和网格藏起来，否则从下往上只能看到一块地板
+  const belowFloor = camera.position.y < 0.02;
+  ground.visible = !belowFloor;
+  grid.visible = !belowFloor;
+
   outlineEffect.render(scene, camera);
   requestAnimationFrame(tick);
 }
@@ -805,6 +818,8 @@ window.__poser = {  scene,
   frameAvatar,
   useMannequin,
   contactShadow,
+  ground,
+  grid,
   loadFromUrl,
   // 调试/测试入口：多视图融合 → 姿势
   applyFusedLandmarks: (views) => {
@@ -826,6 +841,8 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
+
 
 
 

@@ -1,0 +1,13 @@
+import puppeteer from "puppeteer-core";
+const b = await puppeteer.connect({ browserURL: "http://127.0.0.1:9240", defaultViewport: null });
+const p = await b.newPage();
+const errs = [];
+p.on("pageerror", (e) => errs.push((e.stack || e.message).split("\n").slice(0, 12).join("\n")));
+await p.setViewport({ width: 1100, height: 850 });
+await p.goto("http://localhost:5273/?cb=" + Date.now(), { waitUntil: "domcontentloaded", timeout: 90000 });
+await p.waitForFunction("window.__poserReady === true", { timeout: 120000, polling: 300 });
+await new Promise((r) => setTimeout(r, 1500));
+await p.evaluate(() => document.querySelector(".model-card")?.click());
+await new Promise((r) => setTimeout(r, 8000));
+console.log(errs.length ? errs[0] : "no error");
+await p.close(); await b.disconnect();

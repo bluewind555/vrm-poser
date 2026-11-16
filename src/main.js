@@ -13,9 +13,10 @@ import { landmarksToPose, fuseViews } from './img2pose.js';
 import { estimatePoseFromImage } from './imagepose.js';
 import { applyPose, capturePose, mirrorPose } from './pose.js';
 import { createGallery } from './gallery.js';
+import { createModelLibrary } from './modellib.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v27 · 2026-11-06';
+const APP_VERSION = 'v28 · 2026-11-16';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -506,6 +507,56 @@ const THUMB_H = 512;
 let thumbTarget = null;
 const thumbCamera = new THREE.PerspectiveCamera(30, THUMB_W / THUMB_H, 0.05, 60);
 
+/**
+ * 把当前场景离屏渲染成一张竖版透明底 PNG（角色卡 / 姿势卡共用）。
+ * 注意：会临时把 scene.background 置空，调用方负责在 finally 里还原。
+ */
+function renderPortraitToDataURL() {
+  if (!avatar) return null;
+  const pts = boneWorldPoints(avatar);
+  const box = new THREE.Box3().setFromPoints(pts);
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  const h = Math.max(size.y, 0.6);
+  thumbCamera.position.set(center.x + h * 0.32, center.y + h * 0.08, center.z + h * 2.0);
+  thumbCamera.lookAt(center.x, center.y, center.z);
+
+  if (!thumbTarget) {
+    thumbTarget = new THREE.WebGLRenderTarget(THUMB_W, THUMB_H, { format: THREE.RGBAFormat });
+  }
+  const savedBackground = scene.background;
+  const prevClear = renderer.getClearColor(new THREE.Color());
+  const prevAlpha = renderer.getClearAlpha();
+  let buf;
+  try {
+    scene.background = null; // 透明底，否则卡片里是深色方块
+    renderer.setClearColor(0x000000, 0);
+    renderer.setRenderTarget(thumbTarget);
+    renderer.clear();
+    outlineEffect.render(scene, thumbCamera);
+    buf = new Uint8Array(THUMB_W * THUMB_H * 4);
+    renderer.readRenderTargetPixels(thumbTarget, 0, 0, THUMB_W, THUMB_H, buf);
+  } finally {
+    renderer.setRenderTarget(null);
+    renderer.setClearColor(prevClear, prevAlpha);
+    scene.background = savedBackground;
+  }
+
+  // 上下翻转（WebGL 原点在左下）
+  const cv = document.createElement('canvas');
+  cv.width = THUMB_W;
+  cv.height = THUMB_H;
+  const ctx = cv.getContext('2d');
+  const img = ctx.createImageData(THUMB_W, THUMB_H);
+  const rowBytes = THUMB_W * 4;
+  for (let y = 0; y < THUMB_H; y++) {
+    const src = (THUMB_H - 1 - y) * rowBytes;
+    img.data.set(buf.subarray(src, src + rowBytes), y * rowBytes);
+  }
+  ctx.putImageData(img, 0, 0);
+  return cv.toDataURL('image/png');
+}
+
 async function bakeThumb(poseEntry) {
   if (!avatar) return null;
   let res;
@@ -518,61 +569,51 @@ async function bakeThumb(poseEntry) {
   const pose = await res.json();
   const savedPose = capturePose(avatar.humanoid, 'tmp');
   const savedRootY = avatar.root.position.y;
-  const savedBackground = scene.background;
 
   try {
     applyPose(avatar.humanoid, pose);
     avatar.retarget?.();
     avatar.root.updateMatrixWorld(true);
-
-    const pts = boneWorldPoints(avatar);
-    const box = new THREE.Box3().setFromPoints(pts);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    const h = Math.max(size.y, 0.6);
-    thumbCamera.position.set(center.x + h * 0.32, center.y + h * 0.08, center.z + h * 2.0);
-    thumbCamera.lookAt(center.x, center.y, center.z);
-
-    if (!thumbTarget) {
-      thumbTarget = new THREE.WebGLRenderTarget(THUMB_W, THUMB_H, { format: THREE.RGBAFormat });
-    }
-    const prevClear = renderer.getClearColor(new THREE.Color());
-    const prevAlpha = renderer.getClearAlpha();
-    scene.background = null; // 缩略图要透明底，否则卡片里是深色方块
-    renderer.setClearColor(0x000000, 0);
-    renderer.setRenderTarget(thumbTarget);
-    renderer.clear();
-    outlineEffect.render(scene, thumbCamera);
-    const buf = new Uint8Array(THUMB_W * THUMB_H * 4);
-    renderer.readRenderTargetPixels(thumbTarget, 0, 0, THUMB_W, THUMB_H, buf);
-    renderer.setRenderTarget(null);
-    renderer.setClearColor(prevClear, prevAlpha);
-
-    // 上下翻转（WebGL 原点在左下）
-    const cv = document.createElement('canvas');
-    cv.width = THUMB_W;
-    cv.height = THUMB_H;
-    const ctx = cv.getContext('2d');
-    const img = ctx.createImageData(THUMB_W, THUMB_H);
-    const rowBytes = THUMB_W * 4;
-    for (let y = 0; y < THUMB_H; y++) {
-      const src = (THUMB_H - 1 - y) * rowBytes;
-      img.data.set(buf.subarray(src, src + rowBytes), y * rowBytes);
-    }
-    ctx.putImageData(img, 0, 0);
-    return cv.toDataURL('image/png');
+    return renderPortraitToDataURL();
   } catch (err) {
     console.warn('[gallery] 缩略图烘焙失败', err);
     return null;
   } finally {
     // 无论成功失败都还原用户当前姿势
-    scene.background = savedBackground;
     applyPose(avatar.humanoid, savedPose);
     avatar.retarget?.();
     avatar.root.position.y = savedRootY;
     avatar.root.updateMatrixWorld(true);
   }
 }
+
+// ---------- 角色库（首屏） ----------
+const modelLibrary = createModelLibrary({
+  onPick: async (model) => {
+    ui.setStatus(`加载中：${model.name}…`);
+    const a = await loadFromUrl(model.file, model.name);
+    if (!a) {
+      ui.setStatus(`加载失败：${model.name}`, 'error');
+      return;
+    }
+    ui.setStatus(`已加载 ${model.name}（${model.game}）`);
+    // 顺手补一张角色卡缩略图，下次打开就直接有图。
+    // 延后到首帧之后：刚 load 完时还有异步收尾（贴图/骨骼矩阵），直接渲染会爆栈。
+    setTimeout(() => {
+      try {
+        if (!avatar) return;
+        avatar.root.updateMatrixWorld(true);
+        const dataUrl = renderPortraitToDataURL();
+        if (dataUrl) modelLibrary.setThumb(model.id, dataUrl);
+      } catch (err) {
+        console.warn('[modellib] 角色缩略图生成失败', err?.message);
+      }
+    }, 1500);
+  },
+  setStatus: (msg, kind) => ui.setStatus(msg, kind),
+});
+window.__modelLibrary = modelLibrary;
+document.getElementById('btn-modellib')?.addEventListener('click', () => modelLibrary.open());
 
 // 画廊里最近一次选中的条目（覆盖保存要用它的名字）
 let lastPoseEntry = null;
@@ -719,24 +760,18 @@ const params = new URLSearchParams(location.search);
 const modelParam = params.get('model');
 const poseParam = params.get('pose');
 
-// 默认模型：优先维琳娜（本地放在 public/models/weilina/），
-// 没有这个文件时退回官方示例 VRM，再不行用人偶。
-const DEFAULT_MODELS = [
-  { url: '/models/weilina/维琳娜6.pmx', label: '维琳娜6.pmx' },
-  { url: '/models/sample-vrm1.vrm', label: '示例 VRM' },
-];
 
 async function boot() {
-  let a = null;
   if (modelParam) {
-    a = await loadFromUrl(modelParam, modelParam.split('/').pop());
+    // 深链：?model=/models/xxx/yyy.pmx 直接进姿势台
+    const a = await loadFromUrl(modelParam, modelParam.split('/').pop());
+    if (!a) useMannequin();
   } else {
-    for (const candidate of DEFAULT_MODELS) {
-      a = await loadFromUrl(candidate.url, candidate.label);
-      if (a) break;
-    }
+    // 默认先进角色库挑人；背后放个人偶撑着，切进来不会黑屏
+    useMannequin();
+    ui.setStatus('在角色库里选一个角色开始');
+    modelLibrary.open();
   }
-  if (!a) useMannequin();
 
   // ?pose=/poses/wave.json —— 深链直接摆好某个姿势，也方便自动化截图
   if (poseParam) {
@@ -791,6 +826,9 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
+
+
 
 
 

@@ -1,0 +1,55 @@
+{
+  "format": "vrm-model-library/1",
+  "generatedAt": "2026-11-16T07:56:38.175Z",
+  "games": [
+    "绝区零",
+    "异环"
+  ],
+  "count": 2,
+  "models": [
+    {
+      "id": "zzz-weilina",
+      "dir": "/models/weilina/",
+      "file": "/models/weilina/%E7%BB%B4%E7%90%B3%E5%A8%9C6.pmx",
+      "fileName": "维琳娜6.pmx",
+      "kind": "pmx",
+      "size": 4736628,
+      "game": "绝区零",
+      "character": "维琳娜",
+      "outfit": "默认",
+      "name": "维琳娜",
+      "author": "绝区零（米哈游）· 社区转换",
+      "source": "模之屋",
+      "license": "禁止二次配布 / 禁止商用（见目录内 使用规则.txt）",
+      "tags": [
+        "银发",
+        "双马尾",
+        "礼服"
+      ],
+      "scale": 1,
+      "groundOffset": 0.004
+    },
+    {
+      "id": "nte-xun",
+      "dir": "/models/xun/",
+      "file": "/models/xun/%E6%B5%94.pmx",
+      "fileName": "浔.pmx",
+      "kind": "pmx",
+      "size": 5940847,
+      "game": "异环",
+      "character": "浔",
+      "outfit": "默认",
+      "name": "浔",
+      "author": "异环（完美世界）· 社区转换",
+      "source": "模之屋",
+      "license": "禁止二次配布 / 禁止商用（见目录内 使用规则.txt）",
+      "tags": [
+        "黑发",
+        "长发",
+        "旗袍"
+      ],
+      "scale": 1,
+      "groundOffset": 0.004
+    }
+  ]
+}

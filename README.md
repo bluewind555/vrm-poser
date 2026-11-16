@@ -24,6 +24,46 @@ npm run dev
 
 **注意**：Vite 默认只绑 `localhost`（IPv6 `::1`）。如果浏览器打不开，用 `http://localhost:5273/` 而不是 `127.0.0.1:5273`。
 
+### 角色库（首屏）
+
+打开页面先看到**角色库**：按游戏分组、可搜索、点卡片直接加载。
+
+数据来自 `public/models/index.json`，由扫描脚本生成：
+
+```powershell
+npm run scan        # = node scripts/scan-models.mjs
+```
+
+扫描规则：
+
+- 每个 `public/models/<目录>/` 算一个模型（跳过 `batch` / `posedata` / `mediapipe`）
+- 目录里有 `model.json` 就用它；没有就按目录名猜游戏和角色名
+- 取目录里**最大的** `.pmx`（配件通常比本体小），没有 pmx 再找 `.vrm` / `.glb`
+
+单个模型的元数据（手写，覆盖扫描的猜测值）：
+
+```json
+{
+  "id": "zzz-weilina",
+  "game": "绝区零",
+  "character": "维琳娜",
+  "outfit": "默认",
+  "name": "维琳娜",
+  "author": "米哈游 · 社区转换",
+  "source": "模之屋",
+  "license": "禁止二次配布 / 禁止商用",
+  "tags": ["银发", "礼服"],
+  "scale": 1,
+  "groundOffset": 0.004
+}
+```
+
+角色卡缩略图**第一次打开该角色时自动烘焙**（离屏渲染 + 透明底），存 IndexedDB，
+下次打开直接有图。想重烤就清 `vrm-poser-thumbs` 这个库。
+
+> `model.json` 里的 `scale` / `groundOffset` 目前还没被 loader 消费（每个模型的接地依赖
+> `groundClearance` 自动测量），留着是为「每模型独立校正」预留的字段。
+
 ### 姿势库画廊
 
 面板底部「打开姿势库画廊」：卡片网格 + 搜索框，点卡片直接应用姿势。

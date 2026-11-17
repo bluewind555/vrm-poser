@@ -14,9 +14,10 @@ import { estimatePoseFromImage } from './imagepose.js';
 import { applyPose, capturePose, mirrorPose } from './pose.js';
 import { createGallery } from './gallery.js';
 import { createModelLibrary } from './modellib.js';
+import { createCatalog } from './catalog.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v30 · 2026-11-17';
+const APP_VERSION = 'v31 · 2026-11-17';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -639,32 +640,49 @@ async function bakeThumb(poseEntry) {
 }
 
 // ---------- 角色库（首屏） ----------
-const modelLibrary = createModelLibrary({
-  onPick: async (model) => {
-    ui.setStatus(`加载中：${model.name}…`);
-    const a = await loadFromUrl(model.file, model.name);
-    if (!a) {
-      ui.setStatus(`加载失败：${model.name}`, 'error');
-      return;
+// 角色库 / 模型目录共用：选中一个本机模型 → 加载 + 补缩略图
+async function openModel(model) {
+  ui.setStatus(`加载中：${model.name}…`);
+  const a = await loadFromUrl(model.file, model.name);
+  if (!a) {
+    ui.setStatus(`加载失败：${model.name}`, 'error');
+    return;
+  }
+  ui.setStatus(`已加载 ${model.name}（${model.game}）`);
+  // 顺手补一张角色卡缩略图，下次打开就直接有图。
+  // 延后到首帧之后：刚 load 完时还有异步收尾（贴图/骨骼矩阵），直接渲染会爆栈。
+  setTimeout(() => {
+    try {
+      if (!avatar) return;
+      avatar.root.updateMatrixWorld(true);
+      const dataUrl = renderPortraitToDataURL();
+      if (dataUrl) modelLibrary.setThumb(model.id, dataUrl);
+    } catch (err) {
+      console.warn('[modellib] 角色缩略图生成失败', err?.message);
     }
-    ui.setStatus(`已加载 ${model.name}（${model.game}）`);
-    // 顺手补一张角色卡缩略图，下次打开就直接有图。
-    // 延后到首帧之后：刚 load 完时还有异步收尾（贴图/骨骼矩阵），直接渲染会爆栈。
-    setTimeout(() => {
-      try {
-        if (!avatar) return;
-        avatar.root.updateMatrixWorld(true);
-        const dataUrl = renderPortraitToDataURL();
-        if (dataUrl) modelLibrary.setThumb(model.id, dataUrl);
-      } catch (err) {
-        console.warn('[modellib] 角色缩略图生成失败', err?.message);
-      }
-    }, 1500);
-  },
+  }, 1500);
+}
+
+const modelLibrary = createModelLibrary({
+  onPick: openModel,
   setStatus: (msg, kind) => ui.setStatus(msg, kind),
 });
 window.__modelLibrary = modelLibrary;
-document.getElementById('btn-modellib')?.addEventListener('click', () => modelLibrary.open());
+document.getElementById('btn-modellib')?.addEventListener('click', () => {
+  catalog.close();
+  modelLibrary.open();
+});
+
+// ---------- 模型目录（去模之屋下载的入口） ----------
+const catalog = createCatalog({
+  onPick: openModel,
+  setStatus: (msg, kind) => ui.setStatus(msg, kind),
+});
+window.__catalog = catalog;
+document.getElementById('btn-catalog')?.addEventListener('click', () => {
+  modelLibrary.close();
+  catalog.open();
+});
 
 // 画廊里最近一次选中的条目（覆盖保存要用它的名字）
 let lastPoseEntry = null;
@@ -897,6 +915,9 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
+
+
 
 
 

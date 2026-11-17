@@ -18,7 +18,7 @@
       </header>
 
       <section class="block">
-        <button id="btn-modellib" class="btn wide">角色库</button>
+        <div class="row"><button id="btn-modellib" class="btn">角色库</button><button id="btn-catalog" class="btn ghost">模型目录</button></div>
         <div class="row">
           <label class="btn file">
             载入模型
@@ -159,6 +159,24 @@
 
     <div id="hint">拖 .vrm / .glb 进画面载入 · 左键旋转 · 滚轮缩放</div>
 
+    <!-- 模型目录：只放"去模之屋下载"的入口 -->
+    <div id="catalog" class="modellib-overlay">
+      <div class="modellib-panel">
+        <header class="modellib-head">
+          <h1>模型目录</h1>
+          <input id="catalog-search" type="search" placeholder="搜索角色 / 游戏 / 标签…" />
+          <span id="catalog-count" class="hint small"></span>
+          <button id="catalog-close" class="btn ghost small">关闭</button>
+        </header>
+        <div id="catalog-tabs" class="modellib-tabs"></div>
+        <div id="catalog-grid" class="modellib-grid"></div>
+        <footer class="modellib-foot">
+          目录只存<strong>模之屋的页面链接</strong>，不存模型文件。点卡片会打开原页面，你自己下载；
+          下载解压后把文件夹拖进页面就能入库，卡片会自动变成「已收藏」。
+        </footer>
+      </div>
+    </div>
+
     <!-- 角色库：首屏的模型选择界面 -->
     <div id="modellib" class="modellib-overlay">
       <div class="modellib-panel">
@@ -193,6 +211,7 @@
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
+
 
 
 

@@ -1,0 +1,85 @@
+{
+  "format": "model-catalog/1",
+  "updatedAt": "2026-11-17",
+  "note": "只放页面链接，不放模型文件。sourceUrl 为空表示还没补，界面上点不动。",
+  "entries": [
+    {
+      "id": "wuwa-averdia",
+      "game": "鸣潮",
+      "character": "阿维狄亚",
+      "outfit": "默认",
+      "fileName": "",
+      "source": "模之屋",
+      "sourceUrl": "https://www.aplaybox.com/details/model/EtLbLO00D4aC",
+      "author": "",
+      "license": "见原页面说明",
+      "tags": ["鸣潮"],
+      "note": "示例条目：真实页面链接"
+    },
+    {
+      "id": "bs-misha",
+      "game": "蓝色星原",
+      "character": "米砂",
+      "outfit": "默认",
+      "fileName": "",
+      "source": "模之屋",
+      "sourceUrl": "https://www.aplaybox.com/details/model/FmcuFcXDSvJH",
+      "author": "",
+      "license": "见原页面说明",
+      "tags": ["蓝色星原", "PMX"],
+      "note": "示例条目：真实页面链接"
+    },
+    {
+      "id": "misc-mayo",
+      "game": "原创",
+      "character": "まよ",
+      "outfit": "默认",
+      "fileName": "",
+      "source": "模之屋",
+      "sourceUrl": "https://www.aplaybox.com/details/model/OfrRnIvt88S0",
+      "author": "",
+      "license": "见原页面说明",
+      "tags": ["PMX", "原创"],
+      "note": "示例条目：真实页面链接"
+    },
+    {
+      "id": "genshin-hutao-default",
+      "game": "原神",
+      "character": "胡桃",
+      "outfit": "默认",
+      "fileName": "胡桃.pmx",
+      "source": "模之屋",
+      "sourceUrl": "",
+      "author": "",
+      "license": "见原页面说明",
+      "tags": ["双马尾", "帽子"],
+      "note": "示例：链接还没补，点到会提示"
+    },
+    {
+      "id": "genshin-ganyu-default",
+      "game": "原神",
+      "character": "甘雨",
+      "outfit": "默认",
+      "fileName": "甘雨.pmx",
+      "source": "模之屋",
+      "sourceUrl": "",
+      "author": "",
+      "license": "见原页面说明",
+      "tags": ["角", "长发"],
+      "note": "示例：链接还没补，点到会提示"
+    },
+    {
+      "id": "zzz-anby-default",
+      "game": "绝区零",
+      "character": "安比",
+      "outfit": "默认",
+      "fileName": "安比.pmx",
+      "source": "模之屋",
+      "sourceUrl": "",
+      "author": "",
+      "license": "见原页面说明",
+      "tags": ["短发"],
+      "note": "示例：链接还没补，点到会提示"
+    }
+  ]
+}

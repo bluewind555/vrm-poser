@@ -792,3 +792,73 @@ input[type='range']::-moz-range-thumb {
   z-index: 55;
 }
 
+
+/* ---------- 目录导入面板 ---------- */
+#catimport {
+  z-index: 60;
+}
+
+.catimport-panel {
+  width: min(820px, 92vw);
+  height: auto;
+  max-height: 86vh;
+}
+
+.catimport-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px 18px;
+  overflow: hidden;
+}
+
+.catimport-body input[type='text'] {
+  padding: 8px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.catimport-body textarea {
+  min-height: 180px;
+  max-height: 34vh;
+  resize: vertical;
+  padding: 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font: 12px/1.6 ui-monospace, Consolas, monospace;
+}
+
+.catimport-preview {
+  overflow-y: auto;
+  max-height: 22vh;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.catimport-row {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 5px 8px;
+  background: var(--panel-2);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.catimport-row strong {
+  min-width: 90px;
+}
+
+.catimport-row span {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -15,9 +15,10 @@ import { applyPose, capturePose, mirrorPose } from './pose.js';
 import { createGallery } from './gallery.js';
 import { createModelLibrary } from './modellib.js';
 import { createCatalog } from './catalog.js';
+import { createCatalogImportUI } from './catalogImportUI.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v31 · 2026-11-17';
+const APP_VERSION = 'v32 · 2026-11-17';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -684,6 +685,13 @@ document.getElementById('btn-catalog')?.addEventListener('click', () => {
   catalog.open();
 });
 
+const catalogImport = createCatalogImportUI({
+  onImported: () => catalog.reload(),
+  setStatus: (msg, kind) => ui.setStatus(msg, kind),
+});
+window.__catalogImport = catalogImport;
+document.getElementById('catimport-open')?.addEventListener('click', () => catalogImport.open());
+
 // 画廊里最近一次选中的条目（覆盖保存要用它的名字）
 let lastPoseEntry = null;
 
@@ -915,6 +923,8 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
+
 
 
 

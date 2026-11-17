@@ -159,6 +159,30 @@
 
     <div id="hint">拖 .vrm / .glb 进画面载入 · 左键旋转 · 滚轮缩放</div>
 
+    <!-- 目录导入：粘贴 → 预览 → 导入 -->
+    <div id="catimport" class="gallery-overlay">
+      <div class="gallery-panel catimport-panel">
+        <header class="gallery-head">
+          <h2>导入目录条目</h2>
+          <span class="hint small">从模之屋复制「角色名 + 链接」粘进来（不做抓取）</span>
+          <button id="catimport-close" class="btn ghost small">关闭</button>
+        </header>
+        <div class="catimport-body">
+          <label class="hint small" for="catimport-game">默认游戏（每行可以写第三列覆盖）</label>
+          <input id="catimport-game" type="text" value="原神" placeholder="原神 / 绝区零 / 鸣潮 / 异环 …" />
+          <textarea id="catimport-text" spellcheck="false" placeholder="阿维狄亚&#9;https://www.aplaybox.com/details/model/EtLbLO00D4aC
+甘雨 | 原神 | https://www.aplaybox.com/details/model/xxxx
+https://www.aplaybox.com/details/model/yyyy"></textarea>
+          <div class="row">
+            <button id="catimport-parse" class="btn ghost small">预览</button>
+            <button id="catimport-apply" class="btn small">导入</button>
+            <button id="catimport-export" class="btn ghost small">导出完整 JSON</button>
+            <span id="catimport-stat" class="hint small"></span>
+          </div>
+          <div id="catimport-preview" class="catimport-preview"></div>
+        </div>
+      </div>
+    </div>
     <!-- 模型目录：只放"去模之屋下载"的入口 -->
     <div id="catalog" class="modellib-overlay">
       <div class="modellib-panel">
@@ -166,6 +190,7 @@
           <h1>模型目录</h1>
           <input id="catalog-search" type="search" placeholder="搜索角色 / 游戏 / 标签…" />
           <span id="catalog-count" class="hint small"></span>
+          <button id="catimport-open" class="btn ghost small">导入条目</button>
           <button id="catalog-close" class="btn ghost small">关闭</button>
         </header>
         <div id="catalog-tabs" class="modellib-tabs"></div>
@@ -211,6 +236,7 @@
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
+
 
 
 

@@ -1,4 +1,5 @@
 import { getThumb } from './thumbs.js';
+import { loadExtraEntries } from './catalogImport.js';
 
 /**
  * 模型目录：只放"去模之屋下载"的入口，不含模型文件。
@@ -35,7 +36,12 @@ export function createCatalog({ onPick, setStatus }) {
       fetch('/catalog/models.json').then((r) => (r.ok ? r.json() : { entries: [] })).catch(() => ({ entries: [] })),
       fetch('/models/index.json').then((r) => (r.ok ? r.json() : { models: [] })).catch(() => ({ models: [] })),
     ]);
-    entries = Array.isArray(cat.entries) ? cat.entries : [];
+    const fileEntries = Array.isArray(cat.entries) ? cat.entries : [];
+    // 导入的条目存在 localStorage：优先级高于文件（用户新加的立刻可见）
+    const extra = loadExtraEntries();
+    const byUrl = new Map(fileEntries.map((e) => [e.sourceUrl || e.id, e]));
+    for (const e of extra) byUrl.set(e.sourceUrl || e.id, e);
+    entries = [...byUrl.values()];
     localModels = Array.isArray(idx.models) ? idx.models : [];
   }
 
@@ -166,6 +172,12 @@ export function createCatalog({ onPick, setStatus }) {
     overlay.classList.remove('open');
   }
 
+  /** 导入后调用：丢掉缓存、重新读 */
+  function reload() {
+    entries = null;
+    if (opened) open();
+  }
+
   searchInput?.addEventListener('input', () => {
     keyword = searchInput.value.trim();
     renderGrid();
@@ -175,5 +187,6 @@ export function createCatalog({ onPick, setStatus }) {
     if (e.key === 'Escape' && opened) close();
   });
 
-  return { open, close, isOpen: () => opened };
+  return { open, close, reload, isOpen: () => opened };
 }
+

@@ -17,9 +17,10 @@ import { createModelLibrary } from './modellib.js';
 import { createCatalog } from './catalog.js';
 import { createCatalogImportUI } from './catalogImportUI.js';
 import { buildRecord, saveLocalModel, getLocalModel, deleteLocalModel, listLocalModels } from './modelStore.js';
+import { canSaveToDisk, saveFilesToDisk } from './diskSaver.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v33 · 2026-11-17';
+const APP_VERSION = 'v34 · 2026-11-17';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -469,12 +470,28 @@ async function loadFromFiles(files) {
     const texInfo = texStats ? `贴图 ${texStats.total - texStats.failed}/${texStats.total}` : '';
     ui.setStatus(`已加载 ${pmx.name} · ${texInfo}`);
 
-    // 存进浏览器收藏库，这样刷新之后角色库里还有它
-    savedOk = await persistUploadedModel(list, pmx, pmxDir);
-    if (savedOk) {
-      ui.setStatus(`已加载并收藏：${savedOk.name}（${texInfo}）`);
-      modelLibrary.reload();
-      catalog.reload();
+    // 优先写到磁盘（npm run dev 带本地服务），失败再退回浏览器收藏库
+    const canDisk = await canSaveToDisk();
+    if (canDisk) {
+      const disk = await saveFilesToDisk(list, {
+        onProgress: (done, total) => ui.setStatus(`保存到磁盘… ${done}/${total}`),
+      });
+      if (disk.ok) {
+        savedOk = { id: disk.modelDir, name: disk.modelDir, game: '' };
+        ui.setStatus(
+          `已保存到 public/models/${disk.modelDir}/（${disk.saved} 个文件${disk.failed ? `，${disk.failed} 个失败` : ''}）`,
+        );
+        modelLibrary.reload();
+        catalog.reload();
+      }
+    }
+    if (!savedOk) {
+      savedOk = await persistUploadedModel(list, pmx, pmxDir);
+      if (savedOk) {
+        ui.setStatus(`已加载并收藏到浏览器：${savedOk.name}（${texInfo}）`);
+        modelLibrary.reload();
+        catalog.reload();
+      }
     }
   } catch (err) {
     console.error(err);
@@ -1034,6 +1051,8 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
+
 
 
 

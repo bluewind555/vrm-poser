@@ -115,8 +115,13 @@ const index = {
 const out = path.join(ROOT, 'index.json');
 fs.writeFileSync(out, JSON.stringify(index, null, 2) + '\n');
 
-console.log(`扫描完成：${models.length} 个模型 / ${games.length} 个游戏`);
-for (const m of models) {
-  console.log(`  [${m.game}] ${m.name}  ${m.kind}  ${(m.size / 1048576).toFixed(1)} MB  ${m.file}`);
+export { models, index };
+
+const isCli = process.argv[1] && process.argv[1].replace(/\\/g, '/').endsWith('scripts/scan-models.mjs');
+if (isCli) {
+  console.log(`扫描完成：${models.length} 个模型 / ${games.length} 个游戏`);
+  for (const m of models) {
+    console.log(`  [${m.game}] ${m.name}  ${m.kind}  ${(m.size / 1048576).toFixed(1)} MB  ${m.file}`);
+  }
+  console.log('写入:', out);
 }
-console.log('写入:', out);

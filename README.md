@@ -33,6 +33,31 @@ npm run dev
   - 取景基于骨骼包围盒（`boneWorldPoints`），换模型、换姿势都会跟着变
   - 正俯视/正仰视时方向向量和 up 轴错开一点，否则 `lookAt` 会退化
 
+### 载入文件夹会自己存进 public/models
+
+浏览器不能直接写磁盘，但 `npm run dev` 起的 Vite 本身就是本地 Node 进程，所以加了一个开发期中间件：
+
+```
+拖入文件夹
+  ↓ POST /__save-model?model=<目录名>&path=<相对路径>   （每个文件一次，二进制 body）
+  ↓ Vite 中间件写进 public/models/<目录名>/...
+  ↓ POST /__scan → 重跑 scripts/scan-models.mjs
+  ↓ 角色库自动刷新，立刻出现新卡片
+```
+
+实测：拖入 3 个文件 → `public/models/测试角色/{测试角色.pmx, Texture/...}` 落盘，索引里出现「测试角色」。
+
+**每个用户跑自己的 dev server，就写进他自己的项目目录** —— 不需要额外的服务进程，也不需要文件系统授权弹窗。
+
+安全措施（`vite.config.js`）：
+
+- 只允许写到 `public/models/` 下面
+- 目录名过滤 `\ / : * ? " < > |`，相对路径剔除 `.` / `..`，最后再校验绝对路径前缀
+- 单文件上限 200 MB
+
+**纯静态部署时**（`node scripts/serve-dist.mjs`，没有中间件）：探测 `/__save-model` 失败 →
+自动退回**浏览器收藏库**（IndexedDB），角色库里标「本地收藏」，刷新后仍在，但换电脑/清缓存会丢。
+
 ### 模型目录（只放链接，不放文件）
 
 `public/catalog/models.json` 是一份**指路清单**：每条记录某个角色在模之屋的**页面链接**，

@@ -159,6 +159,36 @@
 
     <div id="hint">拖 .vrm / .glb 进画面载入 · 左键旋转 · 滚轮缩放</div>
 
+    <!-- 入库元数据表单 -->
+    <div id="modelmeta" class="gallery-overlay">
+      <form id="modelmeta-form" class="gallery-panel modelmeta-panel">
+        <header class="gallery-head">
+          <h2 id="modelmeta-title">入库</h2>
+          <span class="hint small">填好后写进该模型目录的 model.json</span>
+        </header>
+        <div class="modelmeta-body">
+          <label>角色名<input name="character" type="text" required placeholder="维琳娜" /></label>
+          <label>游戏<input name="game" type="text" list="game-list" placeholder="绝区零 / 原神 / 鸣潮 …" /></label>
+          <label>服装<input name="outfit" type="text" placeholder="默认" /></label>
+          <label>作者<input name="author" type="text" placeholder="可选" /></label>
+          <label>许可<input name="license" type="text" placeholder="禁止二次配布 / 见原页面" /></label>
+          <label class="span2">标签（空格分隔）<input name="tags" type="text" placeholder="银发 双马尾" /></label>
+          <datalist id="game-list">
+            <option value="原神"></option>
+            <option value="绝区零"></option>
+            <option value="崩坏：星穹铁道"></option>
+            <option value="崩坏3"></option>
+            <option value="鸣潮"></option>
+            <option value="异环"></option>
+            <option value="蓝色星原"></option>
+          </datalist>
+        </div>
+        <footer class="modelmeta-foot">
+          <button id="modelmeta-cancel" type="button" class="btn ghost small">跳过</button>
+          <button type="submit" class="btn small">保存</button>
+        </footer>
+      </form>
+    </div>
     <!-- 目录导入：粘贴 → 预览 → 导入 -->
     <div id="catimport" class="gallery-overlay">
       <div class="gallery-panel catimport-panel">
@@ -237,6 +267,7 @@ https://www.aplaybox.com/details/model/yyyy"></textarea>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
+
 
 
 

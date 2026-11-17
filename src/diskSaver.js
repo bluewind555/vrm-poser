@@ -35,24 +35,36 @@ export async function saveFilesToDisk(files, { onProgress } = {}) {
 
   let saved = 0;
   let failed = 0;
-  for (let i = 0; i < list.length; i++) {
-    const f = list[i];
-    const parts = relOf(f).split('/').filter(Boolean);
-    // 去掉顶层目录（如果有），剩下的是模型目录内部的相对路径
-    const rel = (parts.length > 1 ? parts.slice(1) : parts).join('/');
-    try {
-      const res = await fetch(`/__save-model?model=${encodeURIComponent(modelDir)}&path=${encodeURIComponent(rel)}`, {
-        method: 'POST',
-        body: f,
-        headers: { 'content-type': 'application/octet-stream' },
-      });
-      if (res.ok) saved += 1;
-      else failed += 1;
-    } catch {
-      failed += 1;
+  let done = 0;
+
+  // 并发 4 路：模型动辄几十个贴图，串行传会很慢
+  const CONCURRENCY = 4;
+  let cursor = 0;
+
+  const worker = async () => {
+    for (;;) {
+      const i = cursor++;
+      if (i >= list.length) return;
+      const f = list[i];
+      const parts = relOf(f).split('/').filter(Boolean);
+      const rel = (parts.length > 1 ? parts.slice(1) : parts).join('/');
+      try {
+        const res = await fetch(`/__save-model?model=${encodeURIComponent(modelDir)}&path=${encodeURIComponent(rel)}`, {
+          method: 'POST',
+          body: f,
+          headers: { 'content-type': 'application/octet-stream' },
+        });
+        if (res.ok) saved += 1;
+        else failed += 1;
+      } catch {
+        failed += 1;
+      }
+      done += 1;
+      onProgress?.(done, list.length);
     }
-    onProgress?.(i + 1, list.length);
-  }
+  };
+
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, list.length) }, worker));
 
   if (!saved) return { ok: false, error: '所有文件都写入失败' };
 

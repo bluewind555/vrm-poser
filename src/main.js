@@ -18,9 +18,11 @@ import { createCatalog } from './catalog.js';
 import { createCatalogImportUI } from './catalogImportUI.js';
 import { buildRecord, saveLocalModel, getLocalModel, deleteLocalModel, listLocalModels } from './modelStore.js';
 import { canSaveToDisk, saveFilesToDisk } from './diskSaver.js';
+import { deleteDiskModel } from './diskMeta.js';
+import { createModelMetaUI } from './modelMetaUI.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v34 · 2026-11-17';
+const APP_VERSION = 'v35 · 2026-11-17';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -483,6 +485,18 @@ async function loadFromFiles(files) {
         );
         modelLibrary.reload();
         catalog.reload();
+        // 自动猜的游戏名多半是"未分类"，这里让人改一下，顺便把 model.json 写了
+        // 用 disk.modelDir（保留原始大小写）；pmxDir 是归一化过的全小写路径
+        const folder = disk.modelDir;
+        const guessedChar = folder.replace(/[_\-\s]*by[_\-\s].*$/i, '').replace(/^【[^】]*】/, '').trim() || folder;
+        modelMeta.open({
+          modelDir: disk.modelDir,
+          character: guessedChar,
+          game: guessGameFromText(`${folder} ${pmx.name}`),
+          outfit: '默认',
+          license: '禁止二次配布 / 见原页面说明',
+          tags: [],
+        });
       }
     }
     if (!savedOk) {
@@ -794,6 +808,17 @@ async function openModel(model) {
 
 const modelLibrary = createModelLibrary({
   onPick: openModel,
+  onEdit: (model) => modelMeta.open({ modelDir: model.id, ...model }),
+  onDelete: async (model) => {
+    if (model.source === 'local') {
+      const ok = await deleteLocalModel(model.id);
+      ui.setStatus(ok ? `已从浏览器收藏库删除 ${model.name}` : '删除失败', ok ? undefined : 'error');
+    } else {
+      const r = await deleteDiskModel(model.id);
+      ui.setStatus(r?.ok ? `已删除 public/models/${model.id}/` : `删除失败：${r?.error ?? ''}`, r?.ok ? undefined : 'error');
+    }
+    catalog.reload();
+  },
   setStatus: (msg, kind) => ui.setStatus(msg, kind),
 });
 window.__modelLibrary = modelLibrary;
@@ -819,6 +844,16 @@ const catalogImport = createCatalogImportUI({
 });
 window.__catalogImport = catalogImport;
 document.getElementById('catimport-open')?.addEventListener('click', () => catalogImport.open());
+
+// ---------- 入库元数据表单 ----------
+const modelMeta = createModelMetaUI({
+  onSaved: () => {
+    modelLibrary.reload();
+    catalog.reload();
+  },
+  setStatus: (msg, kind) => ui.setStatus(msg, kind),
+});
+window.__modelMeta = modelMeta;
 
 // 画廊里最近一次选中的条目（覆盖保存要用它的名字）
 let lastPoseEntry = null;
@@ -1051,6 +1086,8 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
+
 
 
 

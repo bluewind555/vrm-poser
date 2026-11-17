@@ -6,7 +6,7 @@ import { listLocalModels } from './modelStore.js';
  * 数据来自 /models/index.json（由 scripts/scan-models.mjs 扫描生成）。
  * 卡片缩略图用 IndexedDB 缓存，第一次打开某个模型后自动补上。
  */
-export function createModelLibrary({ onPick, setStatus }) {
+export function createModelLibrary({ onPick, onDelete, onEdit, setStatus }) {
   const overlay = document.getElementById('modellib');
   const grid = document.getElementById('modellib-grid');
   const searchInput = document.getElementById('modellib-search');
@@ -123,6 +123,35 @@ export function createModelLibrary({ onPick, setStatus }) {
         card.appendChild(badge);
       }
 
+      // 编辑元数据（只对磁盘模型开放：浏览器里的模型没有 model.json）
+      if (model.source !== 'local' && onEdit) {
+        const edit = document.createElement('span');
+        edit.className = 'model-act edit';
+        edit.title = '编辑元数据';
+        edit.textContent = '✎';
+        edit.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          onEdit(model);
+        });
+        card.appendChild(edit);
+      }
+
+      // 删除
+      if (onDelete) {
+        const del = document.createElement('span');
+        del.className = 'model-act del';
+        del.title = '删除这个模型';
+        del.textContent = '✕';
+        del.addEventListener('click', async (ev) => {
+          ev.stopPropagation();
+          const ok = window.confirm(`确定删除「${model.name}」？\n${model.source === 'local' ? '会从浏览器收藏库移除' : `会删除 public/models/${model.id}/ 整个目录`}`);
+          if (!ok) return;
+          await onDelete(model);
+          reload();
+        });
+        card.appendChild(del);
+      }
+
       if (model.license) card.title = model.license;
 
       card.addEventListener('click', () => {
@@ -180,5 +209,6 @@ export function createModelLibrary({ onPick, setStatus }) {
 
   return { open, close, reload, setThumb, isOpen: () => opened };
 }
+
 
 

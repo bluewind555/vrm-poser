@@ -904,3 +904,93 @@ input[type='range']::-moz-range-thumb {
   color: #bcd9ff;
   pointer-events: none;
 }
+
+/* ---------- 入库元数据表单 ---------- */
+#modelmeta {
+  z-index: 62;
+}
+
+.modelmeta-panel {
+  width: min(620px, 92vw);
+  height: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.modelmeta-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 14px;
+  padding: 18px 20px;
+}
+
+.modelmeta-body label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.modelmeta-body label.span2 {
+  grid-column: 1 / -1;
+}
+
+.modelmeta-body input {
+  padding: 8px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.modelmeta-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 20px 18px;
+}
+
+/* 角色库卡片上的操作按钮 */
+.model-act {
+  position: absolute;
+  top: 8px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(10, 12, 16, 0.82);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-style: normal;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 2;
+}
+
+.model-act.edit {
+  right: 36px;
+}
+
+.model-act.del {
+  right: 8px;
+}
+
+.model-card:hover .model-act {
+  opacity: 1;
+}
+
+.model-act:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.model-act.del:hover {
+  color: #ff9b9b;
+  border-color: #ff9b9b;
+}

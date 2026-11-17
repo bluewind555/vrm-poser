@@ -78,6 +78,62 @@ function modelSaverPlugin() {
         }
       });
 
+      // 写模型元数据（游戏/角色/服装/标签）→ public/models/<dir>/model.json
+      server.middlewares.use('/__save-meta', async (req, res) => {
+        const send = (code, obj) => {
+          res.statusCode = code;
+          res.setHeader('content-type', 'application/json');
+          res.end(JSON.stringify(obj));
+        };
+        if (req.method !== 'POST') return send(405, { ok: false, error: 'POST only' });
+        try {
+          const url = new URL(req.url, 'http://localhost');
+          const model = url.searchParams.get('model');
+          const cleanModel = String(model ?? '')
+            .replace(/[\\/:*?"<>|]/g, '_')
+            .replace(/^\.+/, '');
+          if (!cleanModel) return send(400, { ok: false, error: 'bad model' });
+          const modelDir = path.resolve(modelsRoot, cleanModel);
+          if (!modelDir.startsWith(modelsRoot + path.sep)) return send(400, { ok: false, error: 'bad model' });
+
+          const body = await readBody(req);
+          const meta = JSON.parse(body.toString('utf8') || '{}');
+          // 只保留白名单字段，避免把任意内容写进仓库
+          const allow = ['id', 'game', 'character', 'outfit', 'name', 'author', 'source', 'license', 'tags', 'scale', 'groundOffset'];
+          const clean = {};
+          for (const k of allow) {
+            if (meta[k] !== undefined && meta[k] !== null && meta[k] !== '') clean[k] = meta[k];
+          }
+          fs.mkdirSync(modelDir, { recursive: true });
+          fs.writeFileSync(path.join(modelDir, 'model.json'), JSON.stringify(clean, null, 2) + '\n');
+          send(200, { ok: true, meta: clean });
+        } catch (err) {
+          send(500, { ok: false, error: err.message });
+        }
+      });
+
+      // 删除整个模型目录
+      server.middlewares.use('/__delete-model', (req, res) => {
+        const send = (code, obj) => {
+          res.statusCode = code;
+          res.setHeader('content-type', 'application/json');
+          res.end(JSON.stringify(obj));
+        };
+        if (req.method !== 'POST') return send(405, { ok: false, error: 'POST only' });
+        try {
+          const url = new URL(req.url, 'http://localhost');
+          const cleanModel = String(url.searchParams.get('model') ?? '')
+            .replace(/[\\/:*?"<>|]/g, '_')
+            .replace(/^\.+/, '');
+          const modelDir = path.resolve(modelsRoot, cleanModel);
+          if (!cleanModel || !modelDir.startsWith(modelsRoot + path.sep)) return send(400, { ok: false, error: 'bad model' });
+          if (fs.existsSync(modelDir)) fs.rmSync(modelDir, { recursive: true, force: true });
+          send(200, { ok: true });
+        } catch (err) {
+          send(500, { ok: false, error: err.message });
+        }
+      });
+
       server.middlewares.use('/__scan', (req, res) => {
         try {
           execFileSync(process.execPath, ['scripts/scan-models.mjs'], { cwd: process.cwd(), stdio: 'ignore' });

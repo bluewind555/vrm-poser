@@ -88,7 +88,20 @@ export function createModelLibrary({ onPick, onDelete, onEdit, setStatus }) {
       return;
     }
 
+    // 同一游戏 + 同一角色归成一张卡，多套服装在卡内切换
+    const groups = new Map();
     for (const model of list) {
+      const key = `${model.game ?? ''}|${model.character ?? model.name}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(model);
+    }
+    if (countEl) countEl.textContent += ` · ${groups.size} 个角色`;
+
+    for (const [, models] of groups) {
+      // 默认服装优先当封面
+      models.sort((a, b) => (a.outfit === '默认' ? -1 : 0) - (b.outfit === '默认' ? -1 : 0));
+      const model = models[0];
+      const multi = models.length > 1;
       const card = document.createElement('button');
       card.className = 'model-card';
       card.type = 'button';
@@ -110,11 +123,32 @@ export function createModelLibrary({ onPick, onDelete, onEdit, setStatus }) {
       const meta = document.createElement('div');
       meta.className = 'model-meta';
       const name = document.createElement('strong');
-      name.textContent = model.name;
+      name.textContent = model.character || model.name;
       const sub = document.createElement('span');
-      sub.textContent = `${model.game} · ${(model.size / 1048576).toFixed(1)} MB`;
+      sub.textContent = multi
+        ? `${model.game} · ${models.length} 套服装`
+        : `${model.game} · ${(model.size / 1048576).toFixed(1)} MB`;
       meta.append(name, sub);
       card.appendChild(meta);
+
+      // 多套服装：卡内一排 pill，点哪套加载哪套
+      if (multi) {
+        const pills = document.createElement('div');
+        pills.className = 'outfit-pills';
+        for (const m of models) {
+          const pill = document.createElement('span');
+          pill.className = 'outfit-pill';
+          pill.textContent = m.outfit || '默认';
+          pill.title = `加载 ${m.name}`;
+          pill.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            close();
+            onPick(m);
+          });
+          pills.appendChild(pill);
+        }
+        card.appendChild(pills);
+      }
 
       if (model.source === 'local') {
         const badge = document.createElement('span');
@@ -209,6 +243,7 @@ export function createModelLibrary({ onPick, onDelete, onEdit, setStatus }) {
 
   return { open, close, reload, setThumb, isOpen: () => opened };
 }
+
 
 
 

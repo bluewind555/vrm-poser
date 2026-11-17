@@ -994,3 +994,27 @@ input[type='range']::-moz-range-thumb {
   color: #ff9b9b;
   border-color: #ff9b9b;
 }
+
+/* 多套服装的切换 pill */
+.outfit-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 0 12px 10px;
+}
+
+.outfit-pill {
+  padding: 2px 9px;
+  font-size: 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.outfit-pill:hover {
+  color: var(--text);
+  border-color: var(--accent);
+  background: rgba(110, 168, 254, 0.12);
+}

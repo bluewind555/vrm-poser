@@ -22,7 +22,7 @@ import { deleteDiskModel } from './diskMeta.js';
 import { createModelMetaUI } from './modelMetaUI.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v35 · 2026-11-17';
+const APP_VERSION = 'v36 · 2026-11-17';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -1086,6 +1086,7 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
 
 
 

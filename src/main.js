@@ -22,7 +22,7 @@ import { deleteDiskModel } from './diskMeta.js';
 import { createModelMetaUI } from './modelMetaUI.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v36 · 2026-11-17';
+const APP_VERSION = 'v37 · 2026-11-17';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -888,6 +888,12 @@ autoRotateBtn?.addEventListener('click', () => {
   controls.autoRotateSpeed = 0.9;
   autoRotateBtn.textContent = '自动环绕：' + (controls.autoRotate ? '开' : '关');
 });
+
+const gazeBtn = document.getElementById('btn-gaze');
+gazeBtn?.addEventListener('click', () => {
+  setGazeEnabled(!gaze.enabled);
+  gazeBtn.textContent = '视线跟随：' + (gaze.enabled ? '开' : '关');
+});
 window.__gallery = gallery;
 
 // ---------- 姿势编辑闭环：镜像 / 覆盖保存 / 撤销 ----------
@@ -983,6 +989,117 @@ canvas.addEventListener('drop', async (e) => {
 });
 canvas.addEventListener('dblclick', () => frameAvatar());
 
+// ---------- 视线跟随 ----------
+// 指针在画面上指哪儿，角色的头/颈就朝哪儿转（带角度上限和阻尼）。
+let gazeSaved = [];
+const gaze = {
+  enabled: true,
+  pointer: new THREE.Vector2(0, 0),
+  hasPointer: false,
+  yaw: 0,
+  pitch: 0,
+};
+const GAZE_MAX_YAW = THREE.MathUtils.degToRad(42);
+const GAZE_MAX_PITCH = THREE.MathUtils.degToRad(26);
+
+const _gaze = {
+  headPos: new THREE.Vector3(),
+  target: new THREE.Vector3(),
+  dir: new THREE.Vector3(),
+  local: new THREE.Vector3(),
+  plane: new THREE.Plane(),
+  ray: new THREE.Raycaster(),
+  q: new THREE.Quaternion(),
+  qDelta: new THREE.Quaternion(),
+  v: new THREE.Vector3(),
+  euler: new THREE.Euler(),
+};
+
+function setGazeEnabled(on) {
+  gaze.enabled = on;
+  if (!on) {
+    gaze.yaw = 0;
+    gaze.pitch = 0;
+  }
+  return gaze.enabled;
+}
+
+function updateGaze(dt) {
+  const head = avatar?.humanoid?.getNormalizedBoneNode?.('head');
+  const neck = avatar?.humanoid?.getNormalizedBoneNode?.('neck');
+  if (!head) return [];
+
+  let wantYaw = 0;
+  let wantPitch = 0;
+  if (gaze.enabled && gaze.hasPointer) {
+    // 取"相机与头部之间的某个点"当目标：
+    // - 直接把射线投到过头部的平面上，中心点会退化成头骨本身（方向向量≈0，atan2 乱跳）
+    // - 取更远的点又会让方向翻到脑后
+    // 用 0.5 × 相机距头部的距离，方向永远朝相机一侧，中心点自然收敛到 0。
+    head.getWorldPosition(_gaze.headPos);
+    const camDist = camera.position.distanceTo(_gaze.headPos);
+    _gaze.ray.setFromCamera(gaze.pointer, camera);
+    _gaze.target.copy(camera.position).addScaledVector(_gaze.ray.ray.direction, camDist * 0.5);
+    _gaze.dir.subVectors(_gaze.target, _gaze.headPos);
+    // 换算到角色根节点局部：模型被旋转过也不会错
+    const rootQ = avatar.root.getWorldQuaternion(_gaze.q).invert();
+    _gaze.local.copy(_gaze.dir).applyQuaternion(rootQ);
+    if (_gaze.local.lengthSq() > 1e-8) {
+      _gaze.local.normalize();
+      // 约定 +Z 为正前，+X 为角色左手边
+      wantYaw = THREE.MathUtils.clamp(
+        Math.atan2(_gaze.local.x, _gaze.local.z),
+        -GAZE_MAX_YAW,
+        GAZE_MAX_YAW,
+      );
+      wantPitch = THREE.MathUtils.clamp(
+        Math.atan2(-_gaze.local.y, Math.hypot(_gaze.local.x, _gaze.local.z)),
+        -GAZE_MAX_PITCH,
+        GAZE_MAX_PITCH,
+      );
+    }
+  }
+
+  const k = Math.min(1, dt * 8);
+  gaze.yaw += (wantYaw - gaze.yaw) * k;
+  gaze.pitch += (wantPitch - gaze.pitch) * k;
+  if (Math.abs(gaze.yaw) < 1e-4 && Math.abs(gaze.pitch) < 1e-4) return [];
+
+  // 头 70% / 颈 30%，比只转头自然。
+  // 改的是"这一帧"的骨骼姿态，必须在渲染后还原：avatar.update() 是朝目标姿势插值的，
+  // 不还原的话下一帧会从叠加后的姿态继续转，越滚越大（实测能到 160°）。
+  const saved = [];
+  for (const [bone, share] of [
+    [head, 0.7],
+    [neck, 0.3],
+  ]) {
+    if (!bone) continue;
+    saved.push([bone, bone.quaternion.clone()]);
+    _gaze.euler.set(gaze.pitch * share, gaze.yaw * share, 0, 'YXZ');
+    _gaze.qDelta.setFromEuler(_gaze.euler);
+    bone.quaternion.multiply(_gaze.qDelta);
+  }
+  // 改的是 humanoid 代理骨骼，蒙皮用的是真实 MMD 骨骼：
+  // avatar.update() 里的重定向已经在改之前跑完了，这里必须再推一次，否则画面不动。
+  avatar.retarget?.();
+  return saved;
+}
+
+function restoreGaze(saved) {
+  if (!saved?.length) return;
+  for (const [bone, q] of saved) bone.quaternion.copy(q);
+}
+
+canvas.addEventListener('pointermove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  gaze.pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  gaze.pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  gaze.hasPointer = true;
+});
+canvas.addEventListener('pointerleave', () => {
+  gaze.hasPointer = false;
+});
+
 // ---------- 主循环 ----------
 let lastTime = performance.now();
 function tick() {
@@ -993,6 +1110,7 @@ function tick() {
     avatar.update(dt);
     ui.syncFromAvatar(dt);
     updateContactShadow();
+    gazeSaved = updateGaze(dt);
   }
   controls.update();
 
@@ -1002,6 +1120,9 @@ function tick() {
   grid.visible = !belowFloor;
 
   outlineEffect.render(scene, camera);
+  // 视线是"只影响这一帧"的叠加，渲染完立刻还原
+  restoreGaze(gazeSaved);
+  gazeSaved = [];
   requestAnimationFrame(tick);
 }
 
@@ -1061,6 +1182,8 @@ window.__poser = {  scene,
   },
   frameAvatar,
   setViewPreset,
+  setGazeEnabled,
+  gaze,
   useMannequin,
   contactShadow,
   ground,
@@ -1086,6 +1209,10 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
+
+
+
 
 
 

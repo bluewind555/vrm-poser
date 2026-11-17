@@ -60,7 +60,9 @@ export function createCatalog({ onPick, setStatus }) {
       ? localModels.find((m) => norm(m.fileName).includes(norm(entry.fileName)) || norm(entry.fileName).includes(norm(m.fileName)))
       : null;
     if (byFile) return byFile;
-    return localModels.find((m) => norm(m.character) === norm(entry.character) && norm(m.game) === norm(entry.game)) ?? null;
+    const sameChar = localModels.filter((m) => norm(m.character) === norm(entry.character));
+    // 角色名对上就算：用户上传的模型是自动猜的游戏名，常常对不齐（会猜成"未分类"）
+    return sameChar.find((m) => norm(m.game) === norm(entry.game)) ?? sameChar[0] ?? null;
   }
 
   function matches(entry) {

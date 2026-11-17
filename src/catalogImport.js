@@ -96,3 +96,44 @@ export function addExtraEntries(entries) {
 export function clearExtraEntries() {
   saveExtraEntries([]);
 }
+
+// ---------- 删除与隐藏 ----------
+
+const HIDDEN_KEY = 'vrm-poser:catalog-hidden:v1';
+
+export function removeExtraEntry(sourceUrl) {
+  const cur = loadExtraEntries();
+  const next = cur.filter((e) => e.sourceUrl !== sourceUrl);
+  saveExtraEntries(next);
+  return next.length;
+}
+
+export function getHidden() {
+  try {
+    const raw = localStorage.getItem(HIDDEN_KEY);
+    const data = raw ? JSON.parse(raw) : [];
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+export function setHidden(list) {
+  try {
+    localStorage.setItem(HIDDEN_KEY, JSON.stringify(list));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function hideEntry(sourceUrl) {
+  const cur = getHidden();
+  if (!cur.includes(sourceUrl)) cur.push(sourceUrl);
+  setHidden(cur);
+  return cur.length;
+}
+
+export function unhideAll() {
+  setHidden([]);
+}

@@ -1,4 +1,5 @@
 import { getThumb, setThumb as saveThumb } from './thumbs.js';
+import { listLocalModels } from './modelStore.js';
 
 /**
  * 角色库：首屏的模型选择界面。
@@ -22,15 +23,30 @@ export function createModelLibrary({ onPick, setStatus }) {
 
   async function loadIndex() {
     if (index) return index;
+    let disk = { games: [], models: [] };
     try {
       const res = await fetch('/models/index.json');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      index = await res.json();
+      if (res.ok) disk = await res.json();
     } catch (err) {
       console.warn('[modellib] 索引读取失败', err);
-      index = { games: [], models: [] };
     }
+    // 合并浏览器收藏库（用户拖进来、存在 IndexedDB 的模型）
+    const local = await listLocalModels();
+    const models = [...(disk.models ?? []), ...local];
+    const games = [...new Set(models.map((m) => m.game).filter(Boolean))];
+    index = { games, models };
     return index;
+  }
+
+  /** 收藏库变动后重新读（上传/删除模型时调用） */
+  function reload() {
+    index = null;
+    if (opened) {
+      loadIndex().then(() => {
+        renderTabs();
+        renderGrid();
+      });
+    }
   }
 
   function matches(m) {
@@ -100,6 +116,13 @@ export function createModelLibrary({ onPick, setStatus }) {
       meta.append(name, sub);
       card.appendChild(meta);
 
+      if (model.source === 'local') {
+        const badge = document.createElement('span');
+        badge.className = 'local-badge';
+        badge.textContent = '本地收藏';
+        card.appendChild(badge);
+      }
+
       if (model.license) card.title = model.license;
 
       card.addEventListener('click', () => {
@@ -155,5 +178,7 @@ export function createModelLibrary({ onPick, setStatus }) {
     if (e.key === 'Escape' && opened) close();
   });
 
-  return { open, close, setThumb, isOpen: () => opened };
+  return { open, close, reload, setThumb, isOpen: () => opened };
 }
+
+

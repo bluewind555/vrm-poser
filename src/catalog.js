@@ -1,5 +1,6 @@
 import { getThumb } from './thumbs.js';
-import { loadExtraEntries } from './catalogImport.js';
+import { loadExtraEntries, getHidden, hideEntry, removeExtraEntry, unhideAll } from './catalogImport.js';
+import { listLocalModels } from './modelStore.js';
 
 /**
  * 模型目录：只放"去模之屋下载"的入口，不含模型文件。
@@ -22,6 +23,7 @@ export function createCatalog({ onPick, setStatus }) {
   const searchInput = document.getElementById('catalog-search');
   const tabsEl = document.getElementById('catalog-tabs');
   const countEl = document.getElementById('catalog-count');
+  const hiddenBtn = document.getElementById('catalog-hidden');
   if (!overlay || !grid) return { open() {}, close() {}, isOpen: () => false };
 
   let entries = null;
@@ -29,12 +31,16 @@ export function createCatalog({ onPick, setStatus }) {
   let game = '全部';
   let keyword = '';
   let opened = false;
+  let hidden = new Set();
+  let showHidden = false;
+  let extraUrls = new Set();
 
   async function load() {
     if (entries) return;
-    const [cat, idx] = await Promise.all([
+    const [cat, idx, local] = await Promise.all([
       fetch('/catalog/models.json').then((r) => (r.ok ? r.json() : { entries: [] })).catch(() => ({ entries: [] })),
       fetch('/models/index.json').then((r) => (r.ok ? r.json() : { models: [] })).catch(() => ({ models: [] })),
+      listLocalModels(),
     ]);
     const fileEntries = Array.isArray(cat.entries) ? cat.entries : [];
     // 导入的条目存在 localStorage：优先级高于文件（用户新加的立刻可见）
@@ -42,7 +48,10 @@ export function createCatalog({ onPick, setStatus }) {
     const byUrl = new Map(fileEntries.map((e) => [e.sourceUrl || e.id, e]));
     for (const e of extra) byUrl.set(e.sourceUrl || e.id, e);
     entries = [...byUrl.values()];
-    localModels = Array.isArray(idx.models) ? idx.models : [];
+    // 本机模型 = 磁盘扫描 + 浏览器收藏库，一起参与"是否已收藏"的匹配
+    localModels = [...(Array.isArray(idx.models) ? idx.models : []), ...local];
+    hidden = new Set(getHidden());
+    extraUrls = new Set(extra.map((e) => e.sourceUrl || e.id));
   }
 
   /** 目录条目 → 本机模型（按文件名优先，再按角色名） */
@@ -80,9 +89,16 @@ export function createCatalog({ onPick, setStatus }) {
 
   function renderGrid() {
     grid.textContent = '';
-    const list = (entries ?? []).filter(matches);
+    const visible = (entries ?? []).filter((e) => showHidden || !hidden.has(e.sourceUrl || e.id));
+    const list = visible.filter(matches);
     let owned = 0;
-    if (countEl) countEl.textContent = `${list.length} / ${entries?.length ?? 0} 条目录`;
+    if (countEl) {
+      countEl.textContent = `${list.length} / ${visible.length} 条目录${hidden.size && !showHidden ? `（已隐藏 ${hidden.size}）` : ''}`;
+    }
+    if (hiddenBtn) {
+      hiddenBtn.hidden = hidden.size === 0;
+      hiddenBtn.textContent = showHidden ? '取消显示已隐藏' : `显示已隐藏 (${hidden.size})`;
+    }
 
     if (!list.length) {
       const empty = document.createElement('p');
@@ -124,6 +140,26 @@ export function createCatalog({ onPick, setStatus }) {
       badge.className = `cat-badge${local ? ' owned' : ''}`;
       badge.textContent = local ? '已收藏' : entry.sourceUrl ? '去下载' : '待补链接';
       card.appendChild(badge);
+
+      // 删除 / 隐藏：导入来的条目真删，文件里的条目只隐藏
+      const del = document.createElement('span');
+      del.className = 'cat-del';
+      del.title = extraUrls.has(entry.sourceUrl || entry.id) ? '从目录删除' : '隐藏这条（文件里的条目改 JSON 才能真删）';
+      del.textContent = '✕';
+      del.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const key = entry.sourceUrl || entry.id;
+        if (extraUrls.has(key)) {
+          removeExtraEntry(entry.sourceUrl);
+          extraUrls.delete(key);
+          entries = (entries ?? []).filter((e) => (e.sourceUrl || e.id) !== key);
+        } else {
+          hideEntry(key);
+          hidden.add(key);
+        }
+        renderGrid();
+      });
+      card.appendChild(del);
 
       if (entry.author || entry.license) {
         card.title = [entry.author && `作者：${entry.author}`, entry.license && `许可：${entry.license}`]
@@ -183,10 +219,20 @@ export function createCatalog({ onPick, setStatus }) {
     renderGrid();
   });
   document.getElementById('catalog-close')?.addEventListener('click', close);
+  hiddenBtn?.addEventListener('click', () => {
+    showHidden = !showHidden;
+    if (!showHidden) {
+      unhideAll();
+      hidden = new Set();
+    }
+    renderGrid();
+  });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && opened) close();
   });
 
   return { open, close, reload, isOpen: () => opened };
 }
+
+
 

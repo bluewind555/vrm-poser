@@ -16,9 +16,10 @@ import { createGallery } from './gallery.js';
 import { createModelLibrary } from './modellib.js';
 import { createCatalog } from './catalog.js';
 import { createCatalogImportUI } from './catalogImportUI.js';
+import { buildRecord, saveLocalModel, getLocalModel, deleteLocalModel, listLocalModels } from './modelStore.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v32 · 2026-11-17';
+const APP_VERSION = 'v33 · 2026-11-17';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -416,6 +417,7 @@ const normPath = (p) => String(p || '').replace(/\\/g, '/').replace(/^\.\//, '')
  */
 async function loadFromFiles(files) {
   const list = [...files];
+  let savedOk = null;
   if (!list.length) return;
 
   const pmxFiles = list.filter((f) => f.name.toLowerCase().endsWith('.pmx'));
@@ -466,10 +468,119 @@ async function loadFromFiles(files) {
     const texStats = window.__pmxTextures;
     const texInfo = texStats ? `贴图 ${texStats.total - texStats.failed}/${texStats.total}` : '';
     ui.setStatus(`已加载 ${pmx.name} · ${texInfo}`);
+
+    // 存进浏览器收藏库，这样刷新之后角色库里还有它
+    savedOk = await persistUploadedModel(list, pmx, pmxDir);
+    if (savedOk) {
+      ui.setStatus(`已加载并收藏：${savedOk.name}（${texInfo}）`);
+      modelLibrary.reload();
+      catalog.reload();
+    }
   } catch (err) {
     console.error(err);
     ui.setStatus(`加载失败：${err.message}`, 'error');
   }
+  return savedOk;
+}
+
+/** 把上传的模型存进 IndexedDB，返回入库后的元数据 */
+async function persistUploadedModel(list, pmx, pmxDir) {
+  try {
+    const folder = pmxDir.split('/').filter(Boolean).pop() ?? pmx.name.replace(/\.pmx$/i, '');
+    const character = folder.replace(/[_\-\s]*by[_\-\s].*$/i, '').replace(/^【[^】]*】/, '').trim() || folder;
+    const game = guessGameFromText(`${folder} ${pmx.name}`);
+    const id = `local-${slug(`${game}-${character}`)}`;
+    const rec = buildRecord(list, {
+      id,
+      meta: {
+        game,
+        character,
+        outfit: '默认',
+        name: character,
+        source: '本地上传',
+        license: '',
+        tags: ['本地收藏'],
+        savedAt: new Date().toISOString(),
+      },
+    });
+    if (!rec) return null;
+    const ok = await saveLocalModel(rec);
+    if (!ok) return null;
+    return { id, name: character, game, ...rec.meta };
+  } catch (err) {
+    console.warn('[modellib] 收藏失败', err);
+    return null;
+  }
+}
+
+/** 从 IndexedDB 收藏库里加载（刷新后也能用） */
+async function loadLocalModel(model) {
+  const rec = await getLocalModel(model.id);
+  if (!rec?.files?.length) {
+    ui.setStatus('本地收藏读取失败，可能已被删除', 'error');
+    return null;
+  }
+  const relOf = (f) => String(f.path).replace(/\\/g, '/');
+  const fileMap = new Map(rec.files.map((f) => [relOf(f).toLowerCase(), f.blob]));
+  const mainPath = rec.meta?.mainPath ?? relOf(rec.files.find((f) => /\.pmx$/i.test(f.path)) ?? rec.files[0]);
+  const mainBlob = fileMap.get(mainPath.toLowerCase());
+  if (!mainBlob) {
+    ui.setStatus('收藏里找不到主模型文件', 'error');
+    return null;
+  }
+  const dir = mainPath.includes('/') ? mainPath.slice(0, mainPath.lastIndexOf('/') + 1) : '';
+  const urlCache = new Map();
+  const resolveTexture = (rel) => {
+    const want = `${dir}${rel}`.toLowerCase().replace(/^\.\//, '');
+    let blob = fileMap.get(want);
+    if (!blob) {
+      const base = want.split('/').pop();
+      for (const [k, b] of fileMap) {
+        if (k === base || k.endsWith('/' + base)) {
+          blob = b;
+          break;
+        }
+      }
+    }
+    if (!blob) return null;
+    if (!urlCache.has(blob)) urlCache.set(blob, URL.createObjectURL(blob));
+    return urlCache.get(blob);
+  };
+
+  try {
+    const a = await loadPMX(URL.createObjectURL(mainBlob), resolveTexture);
+    setAvatar(a);
+    const texStats = window.__pmxTextures;
+    const texInfo = texStats ? `贴图 ${texStats.total - texStats.failed}/${texStats.total}` : '';
+    ui.setStatus(`已加载 ${model.name}（本地收藏 · ${texInfo}）`);
+    return a;
+  } catch (err) {
+    console.error(err);
+    ui.setStatus(`加载失败：${err.message}`, 'error');
+    return null;
+  }
+}
+
+function slug(s) {
+  return String(s)
+    .toLowerCase()
+    .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+}
+
+function guessGameFromText(text) {
+  const rules = [
+    [/原神|genshin/i, '原神'],
+    [/绝区零|zenless|zzz/i, '绝区零'],
+    [/星穹|star.?rail|hsr/i, '崩坏：星穹铁道'],
+    [/崩坏3|honkai.?3/i, '崩坏3'],
+    [/鸣潮|wuthering|wuwa/i, '鸣潮'],
+    [/异环|neverness|nte/i, '异环'],
+    [/蓝色星原/i, '蓝色星原'],
+  ];
+  for (const [re, name] of rules) if (re.test(text)) return name;
+  return '未分类';
 }
 
 /** 拖拽进来的可能是文件夹，递归收集里面的文件 */
@@ -644,7 +755,7 @@ async function bakeThumb(poseEntry) {
 // 角色库 / 模型目录共用：选中一个本机模型 → 加载 + 补缩略图
 async function openModel(model) {
   ui.setStatus(`加载中：${model.name}…`);
-  const a = await loadFromUrl(model.file, model.name);
+  const a = model.source === 'local' ? await loadLocalModel(model) : await loadFromUrl(model.file, model.name);
   if (!a) {
     ui.setStatus(`加载失败：${model.name}`, 'error');
     return;
@@ -923,6 +1034,8 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
+
 
 
 

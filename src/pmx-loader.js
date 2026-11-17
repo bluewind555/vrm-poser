@@ -866,6 +866,9 @@ uniform float uSphStrength;`,
     moverBone.updateMatrixWorld(false, false);
   }
 
+  // VMD 播放时由外部直接写真实骨骼，retarget 必须让路
+  let externalPose = false;
+
   function retarget() {
     if (noskin || noRetarget) return;
     applyHipsTranslation();
@@ -1067,11 +1070,17 @@ uniform float uSphStrength;`,
     mesh,
     skeleton,
     scale,
+    /** VMD 播放用：真实 MMD 骨骼（按日文名索引） */
+    bones: boneByName,
+    /** VMD 直接驱动真实骨骼时，跳过 retarget，否则每帧会被姿势覆盖 */
+    setExternalPose(v) {
+      externalPose = !!v;
+    },
     /** 接地校正用：直接把最低顶点贴到地面 */
     groundClearance: 0.004,
     getLowestWorldY,
     update() {
-      retarget();
+      if (!externalPose) retarget();
       root.updateMatrixWorld(true);
     },
     retarget,
@@ -1095,6 +1104,8 @@ uniform float uSphStrength;`,
     },
   };
 }
+
+
 
 
 

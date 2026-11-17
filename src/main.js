@@ -20,9 +20,11 @@ import { buildRecord, saveLocalModel, getLocalModel, deleteLocalModel, listLocal
 import { canSaveToDisk, saveFilesToDisk } from './diskSaver.js';
 import { deleteDiskModel } from './diskMeta.js';
 import { createModelMetaUI } from './modelMetaUI.js';
+import { createMotion } from './motions.js';
+import { parseVmdBuffer } from './vmd.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v37 · 2026-11-17';
+const APP_VERSION = 'v39 · 2026-11-17';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -889,6 +891,45 @@ autoRotateBtn?.addEventListener('click', () => {
   autoRotateBtn.textContent = '自动环绕：' + (controls.autoRotate ? '开' : '关');
 });
 
+// 动作按钮
+document.getElementById('btn-motion-breath')?.addEventListener('click', () => {
+  startMotion(createMotion('breath'));
+  ui.setStatus('已开始：呼吸待机');
+});
+document.getElementById('btn-motion-sway')?.addEventListener('click', () => {
+  startMotion(createMotion('sway'));
+  ui.setStatus('已开始：轻晃');
+});
+document.getElementById('btn-motion-wave')?.addEventListener('click', () => {
+  startMotion(createMotion('wave'));
+  ui.setStatus('已开始：挥手');
+});
+for (const [id, url, label] of [
+  ['btn-motion-vmd1', '/motions/idle-breathe.vmd', '待机A（呼吸）'],
+  ['btn-motion-vmd2', '/motions/idle-sway.vmd', '待机B（轻晃）'],
+]) {
+  document.getElementById(id)?.addEventListener('click', () => loadVmdUrl(url, label));
+}
+
+document.getElementById('btn-motion-stop')?.addEventListener('click', () => {
+  stopMotion();
+  ui.setStatus('已停止动作');
+});
+document.getElementById('btn-motion-play')?.addEventListener('click', (ev) => {
+  if (!currentMotion) return;
+  currentMotion.playing = !currentMotion.playing;
+  ev.currentTarget.textContent = currentMotion.playing ? '暂停' : '播放';
+});
+document.getElementById('vmd-file')?.addEventListener('change', (ev) => {
+  const f = ev.target.files?.[0];
+  if (f) loadVmdFile(f);
+  ev.target.value = '';
+});
+document.getElementById('motion-speed')?.addEventListener('input', (ev) => {
+  const v = Number(ev.target.value) || 1;
+  if (currentMotion) currentMotion.speed = v;
+});
+
 const gazeBtn = document.getElementById('btn-gaze');
 gazeBtn?.addEventListener('click', () => {
   setGazeEnabled(!gaze.enabled);
@@ -988,6 +1029,65 @@ canvas.addEventListener('drop', async (e) => {
   else await ui.handleFile(files[0]);
 });
 canvas.addEventListener('dblclick', () => frameAvatar());
+
+// ---------- 动作播放 ----------
+let currentMotion = null;
+
+function stopMotion() {
+  if (!currentMotion) return;
+  currentMotion.stop();
+  // VMD 是直接写真实骨骼的，停下后要把 retarget 还回去，否则姿势不会恢复
+  avatar?.setExternalPose?.(false);
+  currentMotion = null;
+  const nameEl = document.getElementById('motion-name');
+  if (nameEl) nameEl.textContent = '当前：无';
+}
+
+function startMotion(motion) {
+  stopMotion();
+  if (!motion || !avatar) return;
+  currentMotion = motion;
+  const nameEl = document.getElementById('motion-name');
+  if (nameEl) nameEl.textContent = '当前：' + motion.name;
+}
+
+async function loadVmdUrl(url, label) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const player = parseVmdBuffer(await res.arrayBuffer());
+    if (!player.duration) throw new Error('没有骨骼动作');
+    if (!player.name) player.name = label;
+    player.play();
+    startMotion(player);
+    avatar?.setExternalPose?.(true);
+    ui.setStatus('已载入动作 ' + label + '（' + player.duration.toFixed(1) + ' 秒，' + player.tracks.size + ' 根骨骼）');
+  } catch (err) {
+    console.error(err);
+    ui.setStatus('动作载入失败：' + (err?.message ?? err), 'error');
+  }
+}
+
+async function loadVmdFile(file) {
+  if (!file) return;
+  try {
+    const buf = await file.arrayBuffer();
+    const player = parseVmdBuffer(buf);
+    if (!player.duration) {
+      ui.setStatus('这个 vmd 里没有骨骼动作', 'error');
+      return;
+    }
+    // 很多 vmd 内部没有动作名，用文件名兜底
+    if (!player.name) player.name = file.name.replace(/\.vmd$/i, '');
+    player.play();
+    startMotion(player);
+    avatar?.setExternalPose?.(true);
+    ui.setStatus('已载入动作 ' + file.name + '（' + player.duration.toFixed(1) + ' 秒，' + player.tracks.size + ' 根骨骼）');
+  } catch (err) {
+    console.error(err);
+    ui.setStatus('VMD 解析失败：' + (err?.message ?? err), 'error');
+  }
+}
 
 // ---------- 视线跟随 ----------
 // 指针在画面上指哪儿，角色的头/颈就朝哪儿转（带角度上限和阻尼）。
@@ -1110,6 +1210,7 @@ function tick() {
     avatar.update(dt);
     ui.syncFromAvatar(dt);
     updateContactShadow();
+    currentMotion?.update(dt, avatar);
     gazeSaved = updateGaze(dt);
   }
   controls.update();
@@ -1209,6 +1310,9 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
+
+
 
 
 

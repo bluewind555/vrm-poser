@@ -46,6 +46,26 @@
         </div>
         <button id="btn-autorotate" class="btn ghost wide needs-avatar">自动环绕：关</button>
         <button id="btn-gaze" class="btn ghost wide needs-avatar">视线跟随：开</button>
+        <section class="group">
+          <h3>动作</h3>
+          <div class="row wrap">
+            <button id="btn-motion-breath" class="btn ghost small needs-avatar">呼吸</button>
+            <button id="btn-motion-sway" class="btn ghost small needs-avatar">轻晃</button>
+            <button id="btn-motion-wave" class="btn ghost small needs-avatar">挥手</button>
+            <button id="btn-motion-vmd1" class="btn ghost small needs-avatar">待机A</button>
+            <button id="btn-motion-vmd2" class="btn ghost small needs-avatar">待机B</button>
+            <button id="btn-motion-stop" class="btn ghost small needs-avatar">停止</button>
+          </div>
+          <label class="btn file">
+            载入 .vmd 动作
+            <input id="vmd-file" type="file" accept=".vmd" />
+          </label>
+          <div class="row">
+            <button id="btn-motion-play" class="btn ghost small needs-avatar">暂停</button>
+            <label class="hint small">速度 <input id="motion-speed" type="range" min="0.2" max="2" step="0.1" value="1" /></label>
+          </div>
+          <p id="motion-name" class="hint small">当前：无</p>
+        </section>
         <button id="btn-frame" class="btn ghost wide needs-avatar">重置视角（双击画面同效）</button>
       </section>
 
@@ -268,6 +288,8 @@ https://www.aplaybox.com/details/model/yyyy"></textarea>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
+
+
 
 
 

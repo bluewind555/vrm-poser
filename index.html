@@ -36,6 +36,15 @@
           <input id="pose-image" type="file" accept="image/*" multiple />
         </label>
         <p id="pose-image-hint" class="hint small">支持照片/线稿。可一次选多张（同一姿势的不同角度）自动融合；估计不准的关节会在下面标出来。</p>
+        <div class="row wrap view-presets">
+          <button class="btn ghost small needs-avatar" data-view="front">正面</button>
+          <button class="btn ghost small needs-avatar" data-view="side">侧面</button>
+          <button class="btn ghost small needs-avatar" data-view="back">背面</button>
+          <button class="btn ghost small needs-avatar" data-view="top">俯视</button>
+          <button class="btn ghost small needs-avatar" data-view="bottom">仰视</button>
+          <button class="btn ghost small needs-avatar" data-view="closeup">特写</button>
+        </div>
+        <button id="btn-autorotate" class="btn ghost wide needs-avatar">自动环绕：关</button>
         <button id="btn-frame" class="btn ghost wide needs-avatar">重置视角（双击画面同效）</button>
       </section>
 
@@ -184,6 +193,7 @@
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
+
 
 
 

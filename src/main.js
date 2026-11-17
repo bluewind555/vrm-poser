@@ -16,7 +16,7 @@ import { createGallery } from './gallery.js';
 import { createModelLibrary } from './modellib.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v29 · 2026-11-16';
+const APP_VERSION = 'v30 · 2026-11-17';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -273,6 +273,50 @@ export function frameAvatar(a = avatar) {
   camera.far = dist * 20;
   camera.updateProjectionMatrix();
   controls.update();
+}
+
+/** 视角预设：正面 / 侧面 / 背面 / 俯视 / 仰视 / 特写 */
+export function setViewPreset(name) {
+  const a = avatar;
+  if (!a) return false;
+  a.root.updateMatrixWorld(true);
+  const pts = boneWorldPoints(a);
+  const box = pts.length ? new THREE.Box3().setFromPoints(pts) : new THREE.Box3().setFromObject(a.root);
+  if (box.isEmpty()) return false;
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  const h = Math.max(size.y, 0.6);
+
+  const dirs = {
+    front: new THREE.Vector3(0, 0, 1),
+    side: new THREE.Vector3(1, 0.05, 0),
+    back: new THREE.Vector3(0, 0.05, -1),
+    // 正俯视/正仰视要和 up 轴错开一点，否则 lookAt 退化
+    top: new THREE.Vector3(0, 1, 0.08),
+    bottom: new THREE.Vector3(0, -1, 0.08),
+    closeup: new THREE.Vector3(0.18, 0.08, 1),
+  };
+  const dir = (dirs[name] ?? dirs.front).clone().normalize();
+
+  let target = center.clone();
+  target.y = center.y + h * 0.02;
+  let dist = h * 2.2;
+
+  if (name === 'top' || name === 'bottom') dist = h * 1.9;
+  if (name === 'closeup') {
+    const head = a.humanoid?.getNormalizedBoneNode?.('head');
+    // head 骨骼在颈根/下颌附近：往上一丁点命中面部，距离按"头肩特写"取
+    if (head) target = head.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, h * 0.03, 0));
+    dist = h * 1.15;
+  }
+
+  controls.target.copy(target);
+  camera.position.copy(target).addScaledVector(dir, dist);
+  camera.near = Math.max(0.01, dist / 100);
+  camera.far = dist * 20;
+  camera.updateProjectionMatrix();
+  controls.update();
+  return true;
 }
 
 function setAvatar(next, statusText) {
@@ -644,6 +688,17 @@ const gallery = createGallery({
   },
 });
 document.getElementById('btn-gallery')?.addEventListener('click', () => gallery.open());
+
+// ---------- 视角预设 / 自动环绕 ----------
+for (const btn of document.querySelectorAll('[data-view]')) {
+  btn.addEventListener('click', () => setViewPreset(btn.dataset.view));
+}
+const autoRotateBtn = document.getElementById('btn-autorotate');
+autoRotateBtn?.addEventListener('click', () => {
+  controls.autoRotate = !controls.autoRotate;
+  controls.autoRotateSpeed = 0.9;
+  autoRotateBtn.textContent = '自动环绕：' + (controls.autoRotate ? '开' : '关');
+});
 window.__gallery = gallery;
 
 // ---------- 姿势编辑闭环：镜像 / 覆盖保存 / 撤销 ----------
@@ -816,6 +871,7 @@ window.__poser = {  scene,
     return !!window.__poserReady;
   },
   frameAvatar,
+  setViewPreset,
   useMannequin,
   contactShadow,
   ground,
@@ -841,6 +897,8 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
+
 
 
 

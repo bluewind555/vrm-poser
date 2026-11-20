@@ -1018,3 +1018,15 @@ input[type='range']::-moz-range-thumb {
   border-color: var(--accent);
   background: rgba(110, 168, 254, 0.12);
 }
+
+/* ---------- 动作播放时锁住姿势面板 ---------- */
+body.pose-locked [data-pose] {
+  opacity: 0.4;
+  pointer-events: none;
+  filter: grayscale(0.5);
+}
+
+.lock-hint {
+  color: #ffcf7a;
+  margin: 4px 0 8px;
+}

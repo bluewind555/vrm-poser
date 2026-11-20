@@ -24,7 +24,7 @@ import { createMotion } from './motions.js';
 import { parseVmdBuffer } from './vmd.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v39 · 2026-11-17';
+const APP_VERSION = 'v40 · 2026-11-17';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -660,6 +660,7 @@ async function collectDroppedFiles(dataTransfer) {
 document.getElementById('app-version').textContent = APP_VERSION;
 const ui = createUI({
   getAvatar: () => avatar,
+  onBeforePose: () => stopMotion(),
   onLoadFile: async (file) => {
     if (file.name.toLowerCase().endsWith('.pmx')) {
       ui.setStatus('PMX 需要连贴图一起：请用「载入文件夹」选择解压后的整个目录', 'error');
@@ -1039,6 +1040,7 @@ function stopMotion() {
   // VMD 是直接写真实骨骼的，停下后要把 retarget 还回去，否则姿势不会恢复
   avatar?.setExternalPose?.(false);
   currentMotion = null;
+  ui.setPoseLocked(false);
   const nameEl = document.getElementById('motion-name');
   if (nameEl) nameEl.textContent = '当前：无';
 }
@@ -1047,6 +1049,7 @@ function startMotion(motion) {
   stopMotion();
   if (!motion || !avatar) return;
   currentMotion = motion;
+  ui.setPoseLocked(true);
   const nameEl = document.getElementById('motion-name');
   if (nameEl) nameEl.textContent = '当前：' + motion.name;
 }
@@ -1300,6 +1303,8 @@ window.__poser = {  scene,
   },
   // 调试/测试入口：关键点 → 姿势 → 直接套到当前模型
   landmarksToPose: (world) => landmarksToPose(avatar, world),
+  /** 测试用：直接套一个姿势（会走 onBeforePose → 停掉动作） */
+  applyPose: (pose) => ui.applyPoseData(pose),
   applyLandmarks: (world) => {
     const pose = landmarksToPose(avatar, world);
     if (pose) ui.applyPoseData(pose);
@@ -1310,6 +1315,9 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
+
+
 
 
 

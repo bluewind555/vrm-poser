@@ -22,7 +22,7 @@ const BUILTIN = [
 
 const AXES = ['x', 'y', 'z'];
 
-export function createUI({ getAvatar, onLoadFile, onLoadFiles, onUseMannequin, onFrame, onPoseImages }) {
+export function createUI({ getAvatar, onLoadFile, onLoadFiles, onUseMannequin, onFrame, onPoseImages, onBeforePose }) {
   const $ = (id) => document.getElementById(id);
 
   const statusEl = $('status');
@@ -148,6 +148,7 @@ export function createUI({ getAvatar, onLoadFile, onLoadFiles, onUseMannequin, o
   let currentPoseId = null;
 
   function applyPoseData(pose, { ground = true, poseId = null } = {}) {
+    onBeforePose?.(); // 应用姿势前先停掉正在播放的动作，否则两边打架
     if (poseId) currentPoseId = poseId;
     const avatar = getAvatar();
     if (!avatar || !pose) return;
@@ -164,6 +165,16 @@ export function createUI({ getAvatar, onLoadFile, onLoadFiles, onUseMannequin, o
     const miss = result.missing.length ? `，跳过缺失骨骼 ${result.missing.length} 根` : '';
     setStatus(`已应用「${pose.name || '未命名'}」：${result.applied} 根骨骼${miss}`);
     return result;
+  }
+
+  /** 动作播放期间锁住姿势面板，避免"改了没反应"的困惑 */
+  function setPoseLocked(locked) {
+    document.body.classList.toggle('pose-locked', !!locked);
+    const hint = $('pose-lock-hint');
+    if (hint) {
+      hint.hidden = !locked;
+      hint.textContent = locked ? '动作播放中：姿势编辑已暂停，点「停止」后恢复' : '';
+    }
   }
 
   // ---------- 置信度（图片生成的姿势用） ----------
@@ -409,6 +420,7 @@ export function createUI({ getAvatar, onLoadFile, onLoadFiles, onUseMannequin, o
     syncFromAvatar,
     syncSliders,
     applyPoseData,
+    setPoseLocked,
     bindPoseEditing,
     get currentPoseId() {
       return currentPoseId;
@@ -420,6 +432,7 @@ export function createUI({ getAvatar, onLoadFile, onLoadFiles, onUseMannequin, o
     handleFile,
   };
 }
+
 
 
 

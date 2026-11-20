@@ -69,7 +69,7 @@
         <button id="btn-frame" class="btn ghost wide needs-avatar">重置视角（双击画面同效）</button>
       </section>
 
-      <section class="block">
+      <section class="block" data-pose>
         <label class="field-label" for="bone">
           骨骼 <span id="bone-hint" class="hint"></span>
         </label>
@@ -98,7 +98,7 @@
         <div id="confidence" class="confidence"></div>
       </section>
 
-      <section class="block">
+      <section class="block" data-pose>
         <label class="field-label" for="hips-y">髋部高度 <output id="hips-y-v">0.00 m</output></label>
         <input id="hips-y" type="range" min="-0.6" max="0.6" step="0.005" value="0" />
         <button id="btn-ground" class="btn ghost wide needs-avatar">接地校正</button>
@@ -158,11 +158,12 @@
           <h2>姿势库</h2>
           <button id="btn-save" class="btn ghost small needs-avatar">存为预设</button>
         </div>
-        <div class="row">
+        <div class="row" data-pose>
           <button id="btn-mirror" class="btn ghost needs-avatar">镜像</button>
           <button id="btn-overwrite" class="btn ghost needs-avatar">覆盖保存</button>
         </div>
-        <button id="btn-revert" class="btn ghost wide needs-avatar">撤销此姿势的修改</button>
+        <button id="btn-revert" class="btn ghost wide needs-avatar" data-pose>撤销此姿势的修改</button>
+        <p id="pose-lock-hint" class="hint small lock-hint" hidden></p>
         <div id="presets" class="presets"></div>
         <button id="btn-gallery" class="btn ghost wide needs-avatar">打开姿势库画廊</button>
         <p class="hint small">内置预设已按官方示例 VRM 校准；换成你自己的模型后，因比例差异可能仍需微调。</p>
@@ -288,6 +289,7 @@ https://www.aplaybox.com/details/model/yyyy"></textarea>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
+
 
 
 

@@ -24,6 +24,26 @@ npm run dev
 
 **注意**：Vite 默认只绑 `localhost`（IPv6 `::1`）。如果浏览器打不开，用 `http://localhost:5273/` 而不是 `127.0.0.1:5273`。
 
+### 表情（morph）
+
+PMX 自带几十个表情（`モーフ`），面板「表情」区把它们做成可用控件：
+
+| 部分 | 说明 |
+| --- | --- |
+| 预设按钮 | 微笑 / 开心 / 生气 / 难过 / 惊讶 / 眨眼 / 闭眼 / 张嘴（按候选名自动匹配当前模型） |
+| 滑条列表 | 每个可调表情一条，实时 0~100% |
+| 清空 | 一键归零 |
+
+实现（`src/pmx-loader.js` + `src/expressions.js`）：
+
+- PMX 里 `type=1` 的顶点 morph 建成 three.js 的 **morph target**（`geometry.morphAttributes.position`，
+  `morphTargetsRelative = true`），顶点偏移量乘 `scale`
+- `type=0` 的组 morph **递归展开**成"一个名字驱动多个 target"
+- `applyMorphs({名称: 权重})` 内部累加到 `mesh.morphTargetInfluences`
+- 列表里过滤掉 `*左`/`*右` 这类分体（它们由组表情驱动），61 个表情里展示 35 条
+
+实测（维琳娜 61 个表情）：`まばたき` 眨眼效果明显；`怒り` 这类眉形表情会被刘海挡住，属模型本身的可见性问题。
+
 ### 动作（待机动画）
 
 面板「动作」区：

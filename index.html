@@ -69,6 +69,14 @@
         <button id="btn-frame" class="btn ghost wide needs-avatar">重置视角（双击画面同效）</button>
       </section>
 
+      <section class="block">
+        <div class="row between">
+          <label class="field-label">表情 <span id="expression-count" class="hint small"></span></label>
+          <button id="btn-expr-reset" class="btn ghost small">清空</button>
+        </div>
+        <div id="expression-presets" class="expr-presets"></div>
+        <div id="expression-list" class="expr-list"></div>
+      </section>
       <section class="block" data-pose>
         <label class="field-label" for="bone">
           骨骼 <span id="bone-hint" class="hint"></span>
@@ -289,6 +297,7 @@ https://www.aplaybox.com/details/model/yyyy"></textarea>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
+
 
 
 

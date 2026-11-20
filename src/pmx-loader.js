@@ -297,6 +297,56 @@ export async function loadPMX(url, basePath = '') {
   geometry.setAttribute('skinWeight', new THREE.BufferAttribute(data.skinWeights, 4));
   geometry.setIndex(new THREE.BufferAttribute(data.index, 1));
 
+  // ---------- 表情（morph / モーフ） ----------
+  // 只做顶点型(1)和组型(0)。组型会递归展开成"一个名字驱动多个 morph target"。
+  const vertexCount = data.positions.length / 3;
+  const morphTargets = [];
+  const targetOfPmxMorph = new Map(); // pmx morph index → morphTargetInfluences 下标
+  for (const m of data.morphs ?? []) {
+    if (m.type !== 1) continue;
+    const arr = new Float32Array(vertexCount * 3);
+    for (let k = 0; k < m.vertexIndices.length; k++) {
+      const vi = m.vertexIndices[k];
+      if (vi < 0 || vi >= vertexCount) continue;
+      arr[vi * 3] += m.offsets[k][0];
+      arr[vi * 3 + 1] += m.offsets[k][1];
+      arr[vi * 3 + 2] += m.offsets[k][2];
+    }
+    targetOfPmxMorph.set(m.index, morphTargets.length);
+    morphTargets.push(new THREE.Float32BufferAttribute(arr, 3));
+  }
+
+  const groupOfPmxMorph = new Map();
+  for (const m of data.morphs ?? []) {
+    if (m.type === 0) groupOfPmxMorph.set(m.index, m.group);
+  }
+
+  /** 把某个 morph 展开成 [{target, ratio}] */
+  const expandMorph = (pmxIndex, ratio, out = [], depth = 0) => {
+    if (depth > 8) return out;
+    const direct = targetOfPmxMorph.get(pmxIndex);
+    if (direct !== undefined) {
+      out.push({ target: direct, ratio });
+      return out;
+    }
+    const group = groupOfPmxMorph.get(pmxIndex);
+    if (group) for (const e of group) expandMorph(e.index, ratio * e.ratio, out, depth + 1);
+    return out;
+  };
+
+  const morphList = (data.morphs ?? [])
+    .map((m) => {
+      const targets = expandMorph(m.index, 1);
+      return targets.length ? { name: m.name, englishName: m.englishName, panel: m.panel, targets } : null;
+    })
+    .filter(Boolean);
+
+  if (morphTargets.length) {
+    geometry.morphAttributes.position = morphTargets;
+    geometry.morphTargetsRelative = true;
+  }
+  console.log('[pmx] 表情', morphList.length, '个 /', morphTargets.length, '个顶点 morph target');
+
   // ---------- 骨骼 ----------
   const bones = data.bones.map((b) => {
     const bone = new THREE.Bone();
@@ -1062,6 +1112,12 @@ uniform float uSphStrength;`,
     return Number.isFinite(min) ? min : null;
   };
 
+  const morphByName = new Map();
+  for (const m of morphList) {
+    morphByName.set(m.name, m);
+    if (m.englishName) morphByName.set(m.englishName, m);
+  }
+
   return {
     kind: 'pmx',
     label: url.split('/').pop(),
@@ -1070,6 +1126,22 @@ uniform float uSphStrength;`,
     mesh,
     skeleton,
     scale,
+    /** 表情列表：[{ name, englishName, panel, targets }] */
+    morphList,
+    /** 设置表情：{ 名称: 权重 0..1 }，内部按组展开累加 */
+    applyMorphs(map) {
+      const influences = mesh.morphTargetInfluences;
+      if (!influences) return 0;
+      influences.fill(0);
+      let applied = 0;
+      for (const [name, w] of Object.entries(map ?? {})) {
+        const def = morphByName.get(name);
+        if (!def || !w) continue;
+        for (const t of def.targets) influences[t.target] += w * t.ratio;
+        applied += 1;
+      }
+      return applied;
+    },
     /** VMD 播放用：真实 MMD 骨骼（按日文名索引） */
     bones: boneByName,
     /** VMD 直接驱动真实骨骼时，跳过 retarget，否则每帧会被姿势覆盖 */
@@ -1104,6 +1176,7 @@ uniform float uSphStrength;`,
     },
   };
 }
+
 
 
 

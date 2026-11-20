@@ -20,11 +20,12 @@ import { buildRecord, saveLocalModel, getLocalModel, deleteLocalModel, listLocal
 import { canSaveToDisk, saveFilesToDisk } from './diskSaver.js';
 import { deleteDiskModel } from './diskMeta.js';
 import { createModelMetaUI } from './modelMetaUI.js';
+import { createExpressionPanel } from './expressions.js';
 import { createMotion } from './motions.js';
 import { parseVmdBuffer } from './vmd.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v40 · 2026-11-17';
+const APP_VERSION = 'v41 · 2026-11-20';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -336,6 +337,7 @@ function setAvatar(next, statusText) {
     frameAvatar(next);
   }
   ui.onAvatarChange(next, statusText);
+  expressionPanel.attach(next);
   tuning?.apply(); // 换模型后把描边/明暗重新套一遍
   return next;
 }
@@ -848,6 +850,12 @@ const catalogImport = createCatalogImportUI({
 window.__catalogImport = catalogImport;
 document.getElementById('catimport-open')?.addEventListener('click', () => catalogImport.open());
 
+// ---------- 表情 ----------
+const expressionPanel = createExpressionPanel({
+  getAvatar: () => avatar,
+  setStatus: (msg, kind) => ui.setStatus(msg, kind),
+});
+
 // ---------- 入库元数据表单 ----------
 const modelMeta = createModelMetaUI({
   onSaved: () => {
@@ -1315,6 +1323,7 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
 
 
 

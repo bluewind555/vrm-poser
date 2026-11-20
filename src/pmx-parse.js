@@ -108,6 +108,34 @@ export function parsePmxToBuffers(arrayBuffer) {
       position: b.position,
     })),
     textures: model.textures.slice(),
+    // 表情（morph）：只保留顶点型(1)和组型(0)，其余类型（骨骼/UV/材质）暂不支持。
+    // 顶点偏移量同样要乘 scale。
+    morphs: (model.morphs ?? [])
+      .map((m, idx) => {
+        if (m.type === 1) {
+          return {
+            index: idx,
+            name: m.name,
+            englishName: m.englishName,
+            panel: m.panel,
+            type: 1,
+            vertexIndices: m.elements.map((e) => e.index),
+            offsets: m.elements.map((e) => [e.position[0] * scale, e.position[1] * scale, e.position[2] * scale]),
+          };
+        }
+        if (m.type === 0) {
+          return {
+            index: idx,
+            name: m.name,
+            englishName: m.englishName,
+            panel: m.panel,
+            type: 0,
+            group: m.elements.map((e) => ({ index: e.index, ratio: e.ratio })),
+          };
+        }
+        return null;
+      })
+      .filter(Boolean),
   };
 }
 

@@ -1030,3 +1030,66 @@ body.pose-locked [data-pose] {
   color: #ffcf7a;
   margin: 4px 0 8px;
 }
+
+/* ---------- 表情面板 ---------- */
+.expr-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 6px 0 8px;
+}
+
+.expr-presets .btn {
+  padding: 4px 9px;
+  font-size: 12px;
+}
+
+.expr-presets .btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.expr-list {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-right: 2px;
+}
+
+.expr-row {
+  display: grid;
+  grid-template-columns: 88px 1fr 38px;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+
+.expr-row.active {
+  background: rgba(110, 168, 254, 0.12);
+}
+
+.expr-name {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expr-row.active .expr-name {
+  color: var(--text);
+}
+
+.expr-row input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.expr-row output {
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}

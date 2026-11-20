@@ -29,6 +29,9 @@ export class VmdPlayer {
     this.time = 0;
     this.playing = false;
     this.name = vmd?.metadata?.name ?? '';
+    /** 存进姿势用：kind + id（内置动作是 URL，用户上传的是文件名，重启后不可恢复） */
+    this.motionKind = 'vmd';
+    this.motionId = '';
     this.maxFrame = 0;
 
     for (const m of vmd?.motions ?? []) {

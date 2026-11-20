@@ -14,8 +14,11 @@ import * as THREE from 'three';
 const TAU = Math.PI * 2;
 
 class MotionBase {
-  constructor(name, expressions = []) {
+  constructor(name, expressions = [], motionId = '') {
     this.name = name;
+    /** 存进姿势用的稳定标识 */
+    this.motionKind = 'builtin';
+    this.motionId = motionId;
     /** 动作自带的情绪表情（候选名，按顺序找第一个存在的） */
     this.expressions = expressions;
     this.time = 0;
@@ -55,7 +58,7 @@ class MotionBase {
 /** 呼吸：胸腔起伏 + 肩膀微动 + 头轻晃 */
 export class BreathMotion extends MotionBase {
   constructor() {
-    super('呼吸待机', []);
+    super('呼吸待机', [], 'breath');
   }
   pose(t) {
     const breath = Math.sin(t * 1.7);
@@ -72,7 +75,7 @@ export class BreathMotion extends MotionBase {
 /** 轻晃：整体左右重心移动 + 手臂自然摆动 */
 export class SwayMotion extends MotionBase {
   constructor() {
-    super('轻晃', ['にっこり', '笑い']);
+    super('轻晃', ['にっこり', '笑い'], 'sway');
   }
   pose(t) {
     const s = Math.sin(t * 0.9);
@@ -92,7 +95,7 @@ export class SwayMotion extends MotionBase {
 /** 挥手：抬右手，前臂来回摆，头微微侧 */
 export class WaveMotion extends MotionBase {
   constructor() {
-    super('挥手', ['にっこり', '笑い', '喜び']);
+    super('挥手', ['にっこり', '笑い', '喜び'], 'wave');
     this.duration = 4;
   }
   pose(t) {

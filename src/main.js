@@ -668,11 +668,22 @@ const ui = createUI({
   onAfterPose: (pose) => {
     const expr = pose?.meta?.expression;
     if (expr) expressionPanel.setWeights(expr);
+    if (pose?.meta?.motion) restoreMotion(pose.meta.motion);
   },
   // 保存姿势时把当前表情一起写进去
   onCaptureMeta: () => {
+    const meta = {};
     const w = expressionPanel.getWeights();
-    return Object.keys(w).length ? { expression: w } : {};
+    if (Object.keys(w).length) meta.expression = w;
+    if (currentMotion?.motionId) {
+      meta.motion = {
+        kind: currentMotion.motionKind,
+        id: currentMotion.motionId,
+        name: currentMotion.name,
+        speed: currentMotion.speed,
+      };
+    }
+    return meta;
   },
   onLoadFile: async (file) => {
     if (file.name.toLowerCase().endsWith('.pmx')) {
@@ -1160,7 +1171,11 @@ ui.bindPoseEditing({
       return;
     }
     const expr = expressionPanel.getWeights();
-    const pose = capturePose(avatar.humanoid, currentPoseName(), Object.keys(expr).length ? { expression: expr } : {});
+    const meta = Object.keys(expr).length ? { expression: expr } : {};
+    if (currentMotion?.motionId) {
+      meta.motion = { kind: currentMotion.motionKind, id: currentMotion.motionId, name: currentMotion.name, speed: currentMotion.speed };
+    }
+    const pose = capturePose(avatar.humanoid, currentPoseName(), meta);
     pose.meta = { ...(pose.meta || {}), edited: true, editedAt: new Date().toISOString() };
     if (setOverride(poseId, pose)) {
       ui.setStatus(`已覆盖保存到「${currentPoseName()}」`);
@@ -1264,6 +1279,25 @@ function startMotion(motion) {
   if (nameEl) nameEl.textContent = '当前：' + motion.name;
 }
 
+/** 按姿势里存的动作标识恢复播放 */
+async function restoreMotion(motion) {
+  if (!motion?.id) return false;
+  if (motion.kind === 'builtin') {
+    const m = createMotion(motion.id);
+    m.speed = motion.speed ?? 1;
+    startMotion(m);
+    return true;
+  }
+  if (motion.kind === 'vmd' && /^\/motions\//.test(motion.id)) {
+    await loadVmdUrl(motion.id, motion.name ?? 'VMD');
+    return true;
+  }
+  if (motion.kind === 'vmd') {
+    ui.setStatus('这个姿势带的是本地上传的 VMD，刷新后无法自动恢复：' + (motion.name ?? ''), 'error');
+  }
+  return false;
+}
+
 async function loadVmdUrl(url, label) {
   try {
     const res = await fetch(url);
@@ -1271,6 +1305,7 @@ async function loadVmdUrl(url, label) {
     const player = parseVmdBuffer(await res.arrayBuffer());
     if (!player.duration) throw new Error('没有骨骼动作');
     if (!player.name) player.name = label;
+    player.motionId = url;
     player.play();
     // VMD 没有情绪信息，按文件名猜一下（挥手/打招呼 → 微笑）
     player.expressions = /wave|bye|手を振|あいさつ|hello|greet|smile|笑/i.test(file.name) ? ['にっこり', '笑い', '喜び'] : [];
@@ -1294,6 +1329,7 @@ async function loadVmdFile(file) {
     }
     // 很多 vmd 内部没有动作名，用文件名兜底
     if (!player.name) player.name = file.name.replace(/\.vmd$/i, '');
+    player.motionId = 'upload:' + file.name;
     player.play();
     // VMD 没有情绪信息，按文件名猜一下（挥手/打招呼 → 微笑）
     player.expressions = /wave|bye|手を振|あいさつ|hello|greet|smile|笑/i.test(file.name) ? ['にっこり', '笑い', '喜び'] : [];

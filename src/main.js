@@ -26,7 +26,7 @@ import { createMotion } from './motions.js';
 import { parseVmdBuffer } from './vmd.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v44 · 2026-11-20';
+const APP_VERSION = 'v45 · 2026-11-20';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -664,6 +664,16 @@ document.getElementById('app-version').textContent = APP_VERSION;
 const ui = createUI({
   getAvatar: () => avatar,
   onBeforePose: () => stopMotion(),
+  // 应用姿势后恢复它存的表情
+  onAfterPose: (pose) => {
+    const expr = pose?.meta?.expression;
+    if (expr) expressionPanel.setWeights(expr);
+  },
+  // 保存姿势时把当前表情一起写进去
+  onCaptureMeta: () => {
+    const w = expressionPanel.getWeights();
+    return Object.keys(w).length ? { expression: w } : {};
+  },
   onLoadFile: async (file) => {
     if (file.name.toLowerCase().endsWith('.pmx')) {
       ui.setStatus('PMX 需要连贴图一起：请用「载入文件夹」选择解压后的整个目录', 'error');
@@ -769,10 +779,13 @@ async function bakeThumb(poseEntry) {
   }
   const pose = await res.json();
   const savedPose = capturePose(avatar.humanoid, 'tmp');
+  const savedExpr = expressionPanel.getWeights();
   const savedRootY = avatar.root.position.y;
 
   try {
     applyPose(avatar.humanoid, pose);
+    // 缩略图也体现表情，否则画廊里全是扑克脸
+    if (pose.meta?.expression) expressionPanel.setWeights(pose.meta.expression);
     avatar.retarget?.();
     avatar.root.updateMatrixWorld(true);
     return renderPortraitToDataURL();
@@ -780,7 +793,8 @@ async function bakeThumb(poseEntry) {
     console.warn('[gallery] 缩略图烘焙失败', err);
     return null;
   } finally {
-    // 无论成功失败都还原用户当前姿势
+    // 无论成功失败都还原用户当前姿势和表情
+    expressionPanel.setWeights(savedExpr);
     applyPose(avatar.humanoid, savedPose);
     avatar.retarget?.();
     avatar.root.position.y = savedRootY;
@@ -1134,7 +1148,8 @@ function currentPoseName() {
 ui.bindPoseEditing({
   onMirror: () => {
     if (!avatar) return;
-    const mirrored = mirrorPose(capturePose(avatar.humanoid, '镜像'));
+    const exprNow = expressionPanel.getWeights();
+    const mirrored = mirrorPose(capturePose(avatar.humanoid, '镜像', Object.keys(exprNow).length ? { expression: exprNow } : {}));
     ui.applyPoseData(mirrored);
     ui.setStatus('已镜像（左右互换）——满意就点「覆盖保存」');
   },
@@ -1144,7 +1159,8 @@ ui.bindPoseEditing({
       ui.setStatus('先在画廊里选一个姿势，再覆盖保存（否则没有目标）', 'error');
       return;
     }
-    const pose = capturePose(avatar.humanoid, currentPoseName());
+    const expr = expressionPanel.getWeights();
+    const pose = capturePose(avatar.humanoid, currentPoseName(), Object.keys(expr).length ? { expression: expr } : {});
     pose.meta = { ...(pose.meta || {}), edited: true, editedAt: new Date().toISOString() };
     if (setOverride(poseId, pose)) {
       ui.setStatus(`已覆盖保存到「${currentPoseName()}」`);
@@ -1505,6 +1521,7 @@ window.__poser = {  scene,
   /** 测试用：直接套一个姿势（会走 onBeforePose → 停掉动作） */
   applyPose: (pose) => ui.applyPoseData(pose),
   exportPng,
+  expressions: expressionPanel,
   applyLandmarks: (world) => {
     const pose = landmarksToPose(avatar, world);
     if (pose) ui.applyPoseData(pose);
@@ -1515,6 +1532,7 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
 
 
 

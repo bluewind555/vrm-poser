@@ -22,7 +22,7 @@ const BUILTIN = [
 
 const AXES = ['x', 'y', 'z'];
 
-export function createUI({ getAvatar, onLoadFile, onLoadFiles, onUseMannequin, onFrame, onPoseImages, onBeforePose }) {
+export function createUI({ getAvatar, onLoadFile, onLoadFiles, onUseMannequin, onFrame, onPoseImages, onBeforePose, onAfterPose, onCaptureMeta }) {
   const $ = (id) => document.getElementById(id);
 
   const statusEl = $('status');
@@ -126,10 +126,12 @@ export function createUI({ getAvatar, onLoadFile, onLoadFiles, onUseMannequin, o
   function currentPose(name = 'untitled') {
     const avatar = getAvatar();
     if (!avatar) return null;
+    const extra = onCaptureMeta?.() ?? {};
     return capturePose(avatar.humanoid, name, {
       scaleHint: 1,
       rig: avatar.kind,
       savedAt: new Date().toISOString(),
+      ...extra,
     });
   }
 
@@ -161,6 +163,9 @@ export function createUI({ getAvatar, onLoadFile, onLoadFiles, onUseMannequin, o
     applying = false;
     syncSliders();
     setPoseConfidence(pose.meta?.confidence ?? null);
+
+    // 姿势里带了表情就一起还原
+    onAfterPose?.(pose);
 
     const miss = result.missing.length ? `，跳过缺失骨骼 ${result.missing.length} 根` : '';
     setStatus(`已应用「${pose.name || '未命名'}」：${result.applied} 根骨骼${miss}`);
@@ -432,6 +437,7 @@ export function createUI({ getAvatar, onLoadFile, onLoadFiles, onUseMannequin, o
     handleFile,
   };
 }
+
 
 
 

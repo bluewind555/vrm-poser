@@ -145,6 +145,23 @@ export function createExpressionPanel({ getAvatar, setStatus }) {
     apply();
   }
 
+  /** 当前手动表情（用于存进姿势） */
+  function getWeights() {
+    const out = {};
+    for (const [name, w] of weights) if (w > 0.01) out[name] = Math.round(w * 100) / 100;
+    return out;
+  }
+
+  /** 从姿势里恢复表情（整体替换手动层） */
+  function setWeights(map) {
+    weights.clear();
+    for (const [name, w] of Object.entries(map ?? {})) {
+      if (typeof w === 'number' && w > 0.001) weights.set(name, Math.min(1, w));
+    }
+    apply();
+    paint();
+  }
+
   function reset() {
     weights.clear();
     ephemeral.clear();
@@ -244,8 +261,9 @@ export function createExpressionPanel({ getAvatar, setStatus }) {
     setStatus?.('已清空所有表情');
   });
 
-  return { attach, reset, setBlinkEnabled, setMotionExpression, clearMotionExpression };
+  return { attach, reset, setBlinkEnabled, setMotionExpression, clearMotionExpression, getWeights, setWeights };
 }
+
 
 
 

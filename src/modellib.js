@@ -21,6 +21,10 @@ export function createModelLibrary({ onPick, onDelete, onEdit, setStatus }) {
 
   const thumbKey = (id) => `model:${id}`;
 
+  // 缩略图是否已缓存：id -> boolean（批量烘焙要靠它判断"谁还没图"）
+  const thumbState = new Map();
+  const bakeStatusEl = document.getElementById('modellib-bake');
+
   async function loadIndex() {
     if (index) return index;
     let disk = { games: [], models: [] };
@@ -196,6 +200,7 @@ export function createModelLibrary({ onPick, onDelete, onEdit, setStatus }) {
       grid.appendChild(card);
       // 已缓存的缩略图
       getThumb(thumbKey(model.id)).then((dataUrl) => {
+        thumbState.set(model.id, !!dataUrl);
         if (!dataUrl) return;
         img.src = dataUrl;
         thumb.classList.add('ready');
@@ -241,8 +246,20 @@ export function createModelLibrary({ onPick, onDelete, onEdit, setStatus }) {
     if (e.key === 'Escape' && opened) close();
   });
 
-  return { open, close, reload, setThumb, isOpen: () => opened };
+  /** 还没缩略图的模型（供批量烘焙用） */
+  function needsThumbs() {
+    return (index?.models ?? []).filter((m) => thumbState.get(m.id) === false);
+  }
+
+  function setBakeStatus(text) {
+    if (!bakeStatusEl) return;
+    bakeStatusEl.textContent = text || '';
+    bakeStatusEl.hidden = !text;
+  }
+
+  return { open, close, reload, setThumb, needsThumbs, setBakeStatus, isOpen: () => opened };
 }
+
 
 
 

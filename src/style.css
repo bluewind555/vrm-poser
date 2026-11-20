@@ -1093,3 +1093,8 @@ body.pose-locked [data-pose] {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+
+.bake-status {
+  color: #8fd6a8;
+  margin: 0 0 10px;
+}

@@ -25,7 +25,7 @@ import { createMotion } from './motions.js';
 import { parseVmdBuffer } from './vmd.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v43 · 2026-11-20';
+const APP_VERSION = 'v44 · 2026-11-20';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -711,9 +711,9 @@ const thumbCamera = new THREE.PerspectiveCamera(30, THUMB_W / THUMB_H, 0.05, 60)
  * 把当前场景离屏渲染成一张竖版透明底 PNG（角色卡 / 姿势卡共用）。
  * 注意：会临时把 scene.background 置空，调用方负责在 finally 里还原。
  */
-function renderPortraitToDataURL() {
-  if (!avatar) return null;
-  const pts = boneWorldPoints(avatar);
+function renderPortraitToDataURL(target = avatar) {
+  if (!target) return null;
+  const pts = boneWorldPoints(target);
   const box = new THREE.Box3().setFromPoints(pts);
   const center = box.getCenter(new THREE.Vector3());
   const size = box.getSize(new THREE.Vector3());
@@ -787,6 +787,103 @@ async function bakeThumb(poseEntry) {
   }
 }
 
+// ---------- 批量烤角色卡缩略图 ----------
+// 每个模型都要完整加载一次（5~19 秒），所以：串行、只在角色库打开时跑、可随时中断。
+// 为了不打断用户当前看的模型，临时模型加进场景渲染一次就拆掉，当前 avatar 只是临时隐藏。
+let libraryBake = { running: false, done: 0, total: 0, cancel: false };
+
+async function loadSilentModel(model) {
+  if (model.source === 'local') {
+    const rec = await getLocalModel(model.id);
+    if (!rec?.files?.length) return null;
+    const fileMap = new Map(rec.files.map((f) => [String(f.path).replace(/\\/g, '/').toLowerCase(), f.blob]));
+    const mainPath = rec.meta?.mainPath ?? rec.files.find((f) => /\.pmx$/i.test(f.path))?.path;
+    if (!mainPath) return null;
+    const blob = fileMap.get(mainPath.toLowerCase());
+    if (!blob) return null;
+    const dir = mainPath.includes('/') ? mainPath.slice(0, mainPath.lastIndexOf('/') + 1) : '';
+    const urlCache = new Map();
+    const resolveTexture = (rel) => {
+      const want = (dir + rel).toLowerCase().replace(/^\.\//, '');
+      let b = fileMap.get(want);
+      if (!b) {
+        const base = want.split('/').pop();
+        for (const [k, v] of fileMap) if (k === base || k.endsWith('/' + base)) { b = v; break; }
+      }
+      if (!b) return null;
+      if (!urlCache.has(b)) urlCache.set(b, URL.createObjectURL(b));
+      return urlCache.get(b);
+    };
+    return loadPMX(URL.createObjectURL(blob), resolveTexture);
+  }
+  const clean = model.file.split('?')[0].toLowerCase();
+  if (clean.endsWith('.pmx')) {
+    return loadPMX(model.file, model.file.slice(0, model.file.lastIndexOf('/') + 1));
+  }
+  return loadVRM(model.file, model.name);
+}
+
+/** 等模型贴图解码完再截图，否则会拍到一片黑（浔的 TGA 贴图尤其明显） */
+async function waitForTextures(a, timeoutMs = 3000) {
+  const mats = [];
+  a.root.traverse((o) => {
+    if (!o.isMesh) return;
+    for (const m of Array.isArray(o.material) ? o.material : [o.material]) if (m) mats.push(m);
+  });
+  const ready = () => mats.every((m) => !m.map || m.map.image);
+  const t0 = performance.now();
+  while (!ready() && performance.now() - t0 < timeoutMs) {
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return ready();
+}
+
+async function bakeLibraryThumbs() {
+  if (libraryBake.running) return;
+  const pending = modelLibrary.needsThumbs();
+  if (!pending.length) {
+    modelLibrary.setBakeStatus('');
+    return;
+  }
+  libraryBake = { running: true, done: 0, total: pending.length, cancel: false };
+  const savedVisible = avatar?.root.visible ?? true;
+  if (avatar) avatar.root.visible = false;
+
+  try {
+    for (const model of pending) {
+      if (libraryBake.cancel || !modelLibrary.isOpen()) break;
+      modelLibrary.setBakeStatus('烤缩略图 ' + (libraryBake.done + 1) + '/' + libraryBake.total + '：' + model.name);
+      let temp = null;
+      try {
+        temp = await loadSilentModel(model);
+        if (!temp) continue;
+        scene.add(temp.root);
+        temp.root.updateMatrixWorld(true);
+        // 摆个自然站姿再拍，比 T-pose 好看（applyPose 已在文件顶部静态导入）
+        const idle = await fetch('/poses/neutral.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        if (idle && temp.humanoid) applyPose(temp.humanoid, idle);
+        await waitForTextures(temp);
+        await new Promise((r) => requestAnimationFrame(r));
+        const dataUrl = renderPortraitToDataURL(temp);
+        if (dataUrl) await modelLibrary.setThumb(model.id, dataUrl);
+      } catch (err) {
+        console.warn('[bake] 缩略图失败', model.name, err?.message);
+      } finally {
+        if (temp) {
+          scene.remove(temp.root);
+          try { temp.dispose?.(); } catch {}
+        }
+      }
+      libraryBake.done += 1;
+      await new Promise((r) => setTimeout(r, 30));
+    }
+  } finally {
+    if (avatar) avatar.root.visible = savedVisible;
+    libraryBake.running = false;
+    modelLibrary.setBakeStatus('');
+  }
+}
+
 // ---------- 角色库（首屏） ----------
 // 角色库 / 模型目录共用：选中一个本机模型 → 加载 + 补缩略图
 async function openModel(model) {
@@ -830,6 +927,7 @@ window.__modelLibrary = modelLibrary;
 document.getElementById('btn-modellib')?.addEventListener('click', () => {
   catalog.close();
   modelLibrary.open();
+  setTimeout(bakeLibraryThumbs, 900);
 });
 
 // ---------- 模型目录（去模之屋下载的入口） ----------
@@ -1271,6 +1369,7 @@ async function boot() {
     useMannequin();
     ui.setStatus('在角色库里选一个角色开始');
     modelLibrary.open();
+    setTimeout(bakeLibraryThumbs, 1200);
   }
 
   // ?pose=/poses/wave.json —— 深链直接摆好某个姿势，也方便自动化截图
@@ -1333,6 +1432,10 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
+
+
+
 
 
 

@@ -66,6 +66,7 @@
           </div>
           <p id="motion-name" class="hint small">当前：无</p>
         </section>
+        <button id="btn-export" class="btn ghost wide needs-avatar">导出 PNG</button>
         <button id="btn-frame" class="btn ghost wide needs-avatar">重置视角（双击画面同效）</button>
       </section>
 
@@ -189,6 +190,38 @@
 
     <div id="hint">拖 .vrm / .glb 进画面载入 · 左键旋转 · 滚轮缩放</div>
 
+    <!-- 导出 PNG -->
+    <div id="exportpng" class="gallery-overlay">
+      <form id="exportpng-form" class="gallery-panel exportpng-panel">
+        <header class="gallery-head">
+          <h2>导出 PNG</h2>
+          <span class="hint small">按当前视角出图</span>
+        </header>
+        <div class="exportpng-body">
+          <label>尺寸
+            <select name="size">
+              <option value="0">当前画面</option>
+              <option value="1080">1080 长边</option>
+              <option value="1440">1440 长边</option>
+              <option value="2160" selected>2160 长边（4K 竖版）</option>
+              <option value="3840">3840 长边（4K 横版）</option>
+            </select>
+          </label>
+          <label class="hint small">背景色
+            <input name="background" type="color" value="#12141a" />
+          </label>
+          <label class="toggle">
+            <input name="transparent" type="checkbox" checked />
+            <span>透明背景（隐藏地面和阴影）</span>
+          </label>
+        </div>
+        <footer class="modelmeta-foot">
+          <span id="exportpng-status" class="hint small"></span>
+          <button id="exportpng-cancel" type="button" class="btn ghost small">取消</button>
+          <button type="submit" class="btn small">导出</button>
+        </footer>
+      </form>
+    </div>
     <!-- 入库元数据表单 -->
     <div id="modelmeta" class="gallery-overlay">
       <form id="modelmeta-form" class="gallery-panel modelmeta-panel">
@@ -298,6 +331,7 @@ https://www.aplaybox.com/details/model/yyyy"></textarea>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
+
 
 
 

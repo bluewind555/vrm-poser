@@ -21,6 +21,7 @@ import { canSaveToDisk, saveFilesToDisk } from './diskSaver.js';
 import { deleteDiskModel } from './diskMeta.js';
 import { createModelMetaUI } from './modelMetaUI.js';
 import { createExpressionPanel } from './expressions.js';
+import { createExportUI } from './exportUI.js';
 import { createMotion } from './motions.js';
 import { parseVmdBuffer } from './vmd.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
@@ -884,6 +885,79 @@ async function bakeLibraryThumbs() {
   }
 }
 
+// ---------- PNG 导出 ----------
+/**
+ * 按指定长边渲染一张 PNG。
+ * 做法：临时把 renderer / camera / outlineEffect 改成目标尺寸 → 渲染 → 立刻取 canvas 像素 → 全部还原。
+ * （没有 preserveDrawingBuffer，所以必须在同一个任务里紧接着取，不能等 rAF。）
+ */
+async function exportPng({ longEdge = 0, transparent = true, background = '#12141a' } = {}) {
+  if (!avatar) return { ok: false, error: '没有模型' };
+
+  const savedBg = scene.background;
+  const savedGround = ground.visible;
+  const savedGrid = grid.visible;
+  const savedShadow = contactShadow.visible;
+  const savedAspect = camera.aspect;
+  const savedSize = new THREE.Vector2();
+  renderer.getSize(savedSize);
+  const prevClear = renderer.getClearColor(new THREE.Color());
+  const prevAlpha = renderer.getClearAlpha();
+  const prevPixelRatio = renderer.getPixelRatio();
+
+  const w = longEdge
+    ? Math.round(camera.aspect >= 1 ? longEdge : longEdge * camera.aspect)
+    : renderer.domElement.width;
+  const h = longEdge
+    ? Math.round(camera.aspect >= 1 ? longEdge / camera.aspect : longEdge)
+    : renderer.domElement.height;
+
+  try {
+    renderer.setPixelRatio(1);
+    renderer.setSize(w, h, false);
+    outlineEffect.setSize(w, h);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+
+    if (transparent) {
+      scene.background = null;
+      ground.visible = false;
+      grid.visible = false;
+      contactShadow.visible = false;
+      renderer.setClearColor(0x000000, 0);
+    } else {
+      scene.background = new THREE.Color(background);
+      renderer.setClearColor(new THREE.Color(background), 1);
+    }
+
+    outlineEffect.render(scene, camera);
+    const dataUrl = renderer.domElement.toDataURL('image/png');
+
+    // 触发下载
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    a.href = dataUrl;
+    a.download = `poser-${stamp}.png`;
+    a.click();
+
+    return { ok: true, width: w, height: h };
+  } catch (err) {
+    console.error(err);
+    return { ok: false, error: err?.message ?? String(err) };
+  } finally {
+    renderer.setPixelRatio(prevPixelRatio);
+    renderer.setSize(savedSize.x, savedSize.y, false);
+    outlineEffect.setSize(savedSize.x, savedSize.y);
+    camera.aspect = savedAspect;
+    camera.updateProjectionMatrix();
+    renderer.setClearColor(prevClear, prevAlpha);
+    scene.background = savedBg;
+    ground.visible = savedGround;
+    grid.visible = savedGrid;
+    contactShadow.visible = savedShadow;
+  }
+}
+
 // ---------- 角色库（首屏） ----------
 // 角色库 / 模型目录共用：选中一个本机模型 → 加载 + 补缩略图
 async function openModel(model) {
@@ -947,6 +1021,14 @@ const catalogImport = createCatalogImportUI({
 });
 window.__catalogImport = catalogImport;
 document.getElementById('catimport-open')?.addEventListener('click', () => catalogImport.open());
+
+// ---------- 导出 ----------
+const exportUI = createExportUI({
+  onExport: (opts) => exportPng(opts),
+  setStatus: (msg, kind) => ui.setStatus(msg, kind),
+});
+window.__exportUI = exportUI;
+document.getElementById('btn-export')?.addEventListener('click', () => exportUI.open());
 
 // ---------- 表情 ----------
 const expressionPanel = createExpressionPanel({
@@ -1422,6 +1504,7 @@ window.__poser = {  scene,
   landmarksToPose: (world) => landmarksToPose(avatar, world),
   /** 测试用：直接套一个姿势（会走 onBeforePose → 停掉动作） */
   applyPose: (pose) => ui.applyPoseData(pose),
+  exportPng,
   applyLandmarks: (world) => {
     const pose = landmarksToPose(avatar, world);
     if (pose) ui.applyPoseData(pose);

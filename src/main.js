@@ -10,7 +10,6 @@ import { loadPMX } from './pmx-loader.js';
 import { createTuning } from './tuning.js';
 import { createUI } from './ui.js';
 import { landmarksToPose, fuseViews } from './img2pose.js';
-import { estimatePoseFromImage } from './imagepose.js';
 import { applyPose, capturePose, mirrorPose } from './pose.js';
 import { createGallery } from './gallery.js';
 import { createModelLibrary } from './modellib.js';
@@ -26,7 +25,7 @@ import { createMotion } from './motions.js';
 import { parseVmdBuffer } from './vmd.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v45 · 2026-11-20';
+const APP_VERSION = 'v46 · 2026-11-20';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -386,6 +385,7 @@ async function loadVRM(url, label = 'VRM 模型') {
 
 async function loadFromUrl(url, label) {
   ui.setStatus(`加载中：${label}`);
+  startProgressWatch();
   try {
     const clean = url.split('?')[0].toLowerCase();
     let a;
@@ -396,6 +396,7 @@ async function loadFromUrl(url, label) {
       a = await loadVRM(url, label);
     }
     setAvatar(a);
+    hideProgress();
     ui.setStatus(
       a.kind === 'pmx'
         ? `已加载 ${label}（PMX · 已重定向到标准人形骨骼）`
@@ -404,6 +405,7 @@ async function loadFromUrl(url, label) {
     return a;
   } catch (err) {
     console.error(err);
+    hideProgress();
     ui.setStatus(`加载失败：${err.message}`, 'error');
     return null;
   }
@@ -700,7 +702,8 @@ const ui = createUI({
     const views = [];
     for (const file of files) {
       try {
-        const est = await estimatePoseFromImage(file);
+        const { estimatePoseFromImage } = await import('./imagepose.js');
+      const est = await estimatePoseFromImage(file);
         if (est) views.push({ name: file.name, world: est.world, ms: est.ms });
         else console.warn('[img2pose] 未检出人:', file.name);
       } catch (err) {
@@ -811,6 +814,39 @@ async function bakeThumb(poseEntry) {
     avatar.root.position.y = savedRootY;
     avatar.root.updateMatrixWorld(true);
   }
+}
+
+// ---------- 加载进度 ----------
+// PMX 贴图是异步解码的，loader 里有 window.__pmxTextures 计数，这里轮询它显示进度；
+// 否则"浔"这种 19 秒的模型只有一个静态的"加载中…"，看着像卡死。
+const loadProgressEl = document.getElementById('load-progress');
+const loadProgressBar = document.getElementById('load-progress-bar');
+const loadProgressText = document.getElementById('load-progress-text');
+let progressTimer = null;
+
+function showProgress(text, ratio) {
+  if (!loadProgressEl) return;
+  loadProgressEl.hidden = false;
+  if (loadProgressText) loadProgressText.textContent = text;
+  if (loadProgressBar) loadProgressBar.style.width = ratio == null ? '12%' : Math.round(ratio * 100) + '%';
+}
+
+function hideProgress() {
+  if (progressTimer) clearInterval(progressTimer);
+  progressTimer = null;
+  if (loadProgressEl) loadProgressEl.hidden = true;
+  if (loadProgressBar) loadProgressBar.style.width = '0%';
+}
+
+function startProgressWatch() {
+  hideProgress();
+  showProgress('解析模型…', 0.08);
+  progressTimer = setInterval(() => {
+    const s = window.__pmxTextures;
+    if (!s || !s.total) return;
+    const failed = s.failed ? '（失败 ' + s.failed + '）' : '';
+    showProgress('贴图 ' + s.loaded + '/' + s.total + failed, 0.15 + 0.8 * (s.loaded / s.total));
+  }, 150);
 }
 
 // ---------- 批量烤角色卡缩略图 ----------
@@ -1452,6 +1488,10 @@ canvas.addEventListener('pointermove', (e) => {
 canvas.addEventListener('pointerleave', () => {
   gaze.hasPointer = false;
 });
+
+// 系统「减少动效」：不主动提示，但把默认值交给各模块（眨眼已处理）
+const prefersReducedMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (prefersReducedMotion) console.log('[poser] 检测到 prefers-reduced-motion，自动眨眼默认关闭');
 
 // ---------- 主循环 ----------
 let lastTime = performance.now();

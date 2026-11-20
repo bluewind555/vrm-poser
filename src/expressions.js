@@ -171,8 +171,11 @@ export function createExpressionPanel({ getAvatar, setStatus }) {
 
   // ---------- 自动眨眼 ----------
   // 人对"完全不眨眼"极其敏感，静置时加一个随机眨眼循环，观感立刻不一样。
+  // 尊重系统「减少动效」偏好：这类用户默认不开自动眨眼
+  const reduceMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   const blink = {
-    enabled: true,
+    enabled: !reduceMotion,
     morph: null,
     timer: null,
     closing: false,

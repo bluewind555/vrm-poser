@@ -25,7 +25,7 @@ import { createMotion } from './motions.js';
 import { parseVmdBuffer } from './vmd.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v41 · 2026-11-20';
+const APP_VERSION = 'v42 · 2026-11-20';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -1323,6 +1323,7 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
 
 
 

@@ -24,7 +24,8 @@ export function createExpressionPanel({ getAvatar, setStatus }) {
   const countEl = document.getElementById('expression-count');
   if (!listEl || !presetEl) return { attach() {}, reset() {} };
 
-  const weights = new Map(); // name -> 0..1
+  const weights = new Map(); // 用户手动设的：name -> 0..1
+  const ephemeral = new Map(); // 自动眨眼这类瞬时叠加，不写回滑条
   let morphs = [];
 
   const apply = () => {
@@ -32,6 +33,8 @@ export function createExpressionPanel({ getAvatar, setStatus }) {
     if (!avatar?.applyMorphs) return;
     const map = {};
     for (const [name, w] of weights) if (w > 0.001) map[name] = w;
+    // 瞬时值叠加，取较大者（眨眼期间用户又拉满的话不会翻倍）
+    for (const [name, w] of ephemeral) if (w > 0.001) map[name] = Math.max(map[name] ?? 0, w);
     avatar.applyMorphs(map);
   };
 
@@ -94,6 +97,12 @@ export function createExpressionPanel({ getAvatar, setStatus }) {
     }
     paintPresets();
     paint();
+
+    // 自动眨眼：优先找 まばたき
+    blink.morph = morphs.find((m) => m.name === 'まばたき')?.name ?? morphs.find((m) => /まばたき|blink/i.test(m.name))?.name ?? null;
+    if (blink.enabled && blink.morph) scheduleBlink();
+    else clearTimeout(blink.timer);
+    refreshBlinkButton();
   }
 
   function paintPresets() {
@@ -116,9 +125,83 @@ export function createExpressionPanel({ getAvatar, setStatus }) {
 
   function reset() {
     weights.clear();
+    ephemeral.clear();
     apply();
     paint();
   }
+
+  // ---------- 自动眨眼 ----------
+  // 人对"完全不眨眼"极其敏感，静置时加一个随机眨眼循环，观感立刻不一样。
+  const blink = {
+    enabled: true,
+    morph: null,
+    timer: null,
+    closing: false,
+  };
+
+  const BLINK_CLOSE_MS = 90;
+
+  function blinkOnce() {
+    if (!blink.enabled || !blink.morph) return;
+    ephemeral.set(blink.morph, 1);
+    apply();
+    setTimeout(() => {
+      // 20% 概率连眨两下，更像真人
+      const double = Math.random() < 0.2;
+      ephemeral.delete(blink.morph);
+      apply();
+      if (double) {
+        setTimeout(() => {
+          ephemeral.set(blink.morph, 1);
+          apply();
+          setTimeout(() => {
+            ephemeral.delete(blink.morph);
+            apply();
+          }, BLINK_CLOSE_MS);
+        }, 120);
+      }
+    }, BLINK_CLOSE_MS);
+  }
+
+  function scheduleBlink() {
+    clearTimeout(blink.timer);
+    if (!blink.enabled || !blink.morph) return;
+    // 2.2~6.5 秒随机，和人眼真实频率接近
+    const wait = 2200 + Math.random() * 4300;
+    blink.timer = setTimeout(() => {
+      blinkOnce();
+      scheduleBlink();
+    }, wait);
+  }
+
+  const autoBtn = document.getElementById('btn-autoblink');
+
+  function refreshBlinkButton() {
+    if (!autoBtn) return;
+    const has = !!blink.morph;
+    autoBtn.disabled = !has;
+    autoBtn.textContent = '自动眨眼：' + (has && blink.enabled ? '开' : '关');
+    autoBtn.title = has ? `使用表情「${blink.morph}」` : '当前模型没有眨眼表情';
+  }
+
+  function setBlinkEnabled(on) {
+    blink.enabled = !!on;
+    if (!blink.enabled) {
+      clearTimeout(blink.timer);
+      if (blink.morph) {
+        ephemeral.delete(blink.morph);
+        apply();
+      }
+    } else {
+      scheduleBlink();
+    }
+    refreshBlinkButton();
+  }
+
+  autoBtn?.addEventListener('click', () => {
+    setBlinkEnabled(!blink.enabled);
+    setStatus?.('自动眨眼：' + (blink.enabled ? '开' : '关'));
+  });
 
   for (const p of PRESETS) {
     const btn = document.createElement('button');
@@ -139,5 +222,6 @@ export function createExpressionPanel({ getAvatar, setStatus }) {
     setStatus?.('已清空所有表情');
   });
 
-  return { attach, reset };
+  return { attach, reset, setBlinkEnabled };
 }
+

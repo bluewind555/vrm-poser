@@ -25,7 +25,7 @@ import { createMotion } from './motions.js';
 import { parseVmdBuffer } from './vmd.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v42 · 2026-11-20';
+const APP_VERSION = 'v43 · 2026-11-20';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -1049,6 +1049,7 @@ function stopMotion() {
   avatar?.setExternalPose?.(false);
   currentMotion = null;
   ui.setPoseLocked(false);
+  expressionPanel.clearMotionExpression();
   const nameEl = document.getElementById('motion-name');
   if (nameEl) nameEl.textContent = '当前：无';
 }
@@ -1058,6 +1059,11 @@ function startMotion(motion) {
   if (!motion || !avatar) return;
   currentMotion = motion;
   ui.setPoseLocked(true);
+  // 动作自带情绪表情（如挥手配微笑）
+  const expr = expressionPanel.setMotionExpression(motion.expressions ?? []);
+  const label = motion.name + (expr ? '（表情：' + expr + '）' : '');
+  const nameEl2 = document.getElementById('motion-name');
+  if (nameEl2) nameEl2.textContent = '当前：' + label;
   const nameEl = document.getElementById('motion-name');
   if (nameEl) nameEl.textContent = '当前：' + motion.name;
 }
@@ -1070,6 +1076,8 @@ async function loadVmdUrl(url, label) {
     if (!player.duration) throw new Error('没有骨骼动作');
     if (!player.name) player.name = label;
     player.play();
+    // VMD 没有情绪信息，按文件名猜一下（挥手/打招呼 → 微笑）
+    player.expressions = /wave|bye|手を振|あいさつ|hello|greet|smile|笑/i.test(file.name) ? ['にっこり', '笑い', '喜び'] : [];
     startMotion(player);
     avatar?.setExternalPose?.(true);
     ui.setStatus('已载入动作 ' + label + '（' + player.duration.toFixed(1) + ' 秒，' + player.tracks.size + ' 根骨骼）');
@@ -1091,6 +1099,8 @@ async function loadVmdFile(file) {
     // 很多 vmd 内部没有动作名，用文件名兜底
     if (!player.name) player.name = file.name.replace(/\.vmd$/i, '');
     player.play();
+    // VMD 没有情绪信息，按文件名猜一下（挥手/打招呼 → 微笑）
+    player.expressions = /wave|bye|手を振|あいさつ|hello|greet|smile|笑/i.test(file.name) ? ['にっこり', '笑い', '喜び'] : [];
     startMotion(player);
     avatar?.setExternalPose?.(true);
     ui.setStatus('已载入动作 ' + file.name + '（' + player.duration.toFixed(1) + ' 秒，' + player.tracks.size + ' 根骨骼）');
@@ -1323,6 +1333,8 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
+
 
 
 

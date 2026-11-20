@@ -26,6 +26,7 @@ export function createExpressionPanel({ getAvatar, setStatus }) {
 
   const weights = new Map(); // 用户手动设的：name -> 0..1
   const ephemeral = new Map(); // 自动眨眼这类瞬时叠加，不写回滑条
+  const motionExpr = new Map(); // 动作自带的情绪表情（播放期间生效）
   let morphs = [];
 
   const apply = () => {
@@ -33,7 +34,8 @@ export function createExpressionPanel({ getAvatar, setStatus }) {
     if (!avatar?.applyMorphs) return;
     const map = {};
     for (const [name, w] of weights) if (w > 0.001) map[name] = w;
-    // 瞬时值叠加，取较大者（眨眼期间用户又拉满的话不会翻倍）
+    // 动作表情垫底，瞬时值（眨眼）再叠加，取较大者，避免翻倍
+    for (const [name, w] of motionExpr) if (w > 0.001 && !map[name]) map[name] = w;
     for (const [name, w] of ephemeral) if (w > 0.001) map[name] = Math.max(map[name] ?? 0, w);
     avatar.applyMorphs(map);
   };
@@ -121,6 +123,26 @@ export function createExpressionPanel({ getAvatar, setStatus }) {
     if (name) weights.set(name, value);
     apply();
     paint();
+  }
+
+  /** 动作播放时套用情绪表情：传候选名数组，取第一个当前模型有的 */
+  function setMotionExpression(candidates = []) {
+    motionExpr.clear();
+    // 用户已经手动设了表情就不抢：否则会出现"又生气又微笑"的怪脸
+    const userHasExpression = [...weights.values()].some((w) => w > 0.01);
+    if (candidates?.length && !userHasExpression) {
+      const names = new Set((getAvatar()?.morphList ?? []).map((m) => m.name));
+      const hit = candidates.find((n) => names.has(n));
+      if (hit) motionExpr.set(hit, 1);
+    }
+    apply();
+    return [...motionExpr.keys()][0] ?? null;
+  }
+
+  function clearMotionExpression() {
+    if (!motionExpr.size) return;
+    motionExpr.clear();
+    apply();
   }
 
   function reset() {
@@ -222,6 +244,8 @@ export function createExpressionPanel({ getAvatar, setStatus }) {
     setStatus?.('已清空所有表情');
   });
 
-  return { attach, reset, setBlinkEnabled };
+  return { attach, reset, setBlinkEnabled, setMotionExpression, clearMotionExpression };
 }
+
+
 

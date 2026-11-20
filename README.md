@@ -147,6 +147,32 @@ node scripts/make-idle-vmd.mjs   # 产出 public/motions/idle-breathe.vmd / idle
 
 角度上限：yaw ±42°、pitch ±26°，头 70% / 颈 30%，阻尼 `dt * 8`。
 
+### 导出 PNG
+
+面板「导出 PNG」：按当前视角出图，可选长边和透明底。
+
+| 选项 | 说明 |
+| --- | --- |
+| 尺寸 | 当前画面 / 1080 / 1440 / 2160（4K 竖版）/ 3840（4K 横版） |
+| 透明背景 | 勾上会隐藏地面、网格、接触阴影，`clearAlpha = 0` |
+| 背景色 | 不勾透明时用这个颜色 |
+
+实现（`exportPng()`）：
+
+```
+临时 setSize(w,h) + setPixelRatio(1) + outlineEffect.setSize + camera.aspect
+  → 渲染 → 立刻 canvas.toDataURL('image/png')
+  → finally 里全部还原（尺寸、像素比、宽高比、清屏色、地面可见性）
+```
+
+两个注意点：
+
+- **必须在同一个任务里紧接着取像素**：renderer 没开 `preserveDrawingBuffer`，
+  跨帧后画布会被清空
+- 导出的长边取**较大维度**：竖图（如 2160×1944）自动按宽度算
+
+实测 1600×1600：四角 `rgba(0,0,0,0)` 全透明，导出后画布还原回原尺寸。
+
 ### 视角：360° 无死角 + 预设
 
 - 轨道相机允许一直转到接近正下方（maxPolarAngle = π × 0.995），minDistance 0.35 可以贴近看

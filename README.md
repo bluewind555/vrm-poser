@@ -181,6 +181,27 @@ node scripts/make-idle-vmd.mjs   # 产出 public/motions/idle-breathe.vmd / idle
 
 角度上限：yaw ±42°、pitch ±26°，头 70% / 颈 30%，阻尼 `dt * 8`。
 
+### 窄屏 / 手机
+
+两档断点，核心思路是**缩画布而不是挪相机**：
+
+| 宽度 | 行为 |
+| --- | --- |
+| > 720px | 桌面布局：左侧面板 316px 固定 |
+| ≤ 720px | 面板变底部抽屉（46vh），右下角 ☰ 收放，**默认收起** |
+| ≤ 420px | 抽屉 50vh，卡片更窄（116px），控件更紧凑 |
+
+关键实现（`applyLayout()`）：面板展开时把**画布高度**压到可见区域（`innerHeight - panelH`），
+再调 `camera.aspect` 和 `outlineEffect.setSize`。
+
+> 为什么不移动相机看向上方？因为位移会和你手动旋转视角打架；
+> 缩画布等于换了一个视口，相机会按新宽高比自然重新取景，模型永远不会被抽屉盖住。
+
+踩到的坑：`.load-progress { display: flex }` 会盖掉浏览器默认的 `[hidden] { display: none }`，
+导致进度条加载完不消失 —— 必须显式补一条 `.load-progress[hidden] { display: none }`。
+
+实测（390×844）：面板 y=856（屏外）→ 点 ☰ → y=414（抽屉展开）；横向无溢出。
+
 ### 导出 PNG
 
 面板「导出 PNG」：按当前视角出图，可选长边和透明底。

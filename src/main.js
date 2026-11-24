@@ -25,7 +25,7 @@ import { createMotion } from './motions.js';
 import { parseVmdBuffer } from './vmd.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
 
-const APP_VERSION = 'v46 · 2026-11-20';
+const APP_VERSION = 'v47 · 2026-11-24';
 const canvas = document.querySelector('#view');
 
 // ---------- 渲染器 / 场景 ----------
@@ -816,6 +816,20 @@ async function bakeThumb(poseEntry) {
   }
 }
 
+// ---------- 窄屏面板收起 ----------
+const panelToggle = document.getElementById('btn-panel-toggle');
+panelToggle?.addEventListener('click', () => {
+  document.body.classList.toggle('panel-collapsed');
+  // 等 CSS 过渡结束再量尺寸
+  setTimeout(applyLayout, 240);
+});
+
+// 窄屏默认收起面板：先看模型，需要操作再点 ☰
+if (window.innerWidth <= 720) {
+  document.body.classList.add('panel-collapsed');
+}
+applyLayout();
+
 // ---------- 加载进度 ----------
 // PMX 贴图是异步解码的，loader 里有 window.__pmxTextures 计数，这里轮询它显示进度；
 // 否则"浔"这种 19 秒的模型只有一个静态的"加载中…"，看着像卡死。
@@ -1520,11 +1534,34 @@ function tick() {
   requestAnimationFrame(tick);
 }
 
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
+/**
+ * 窄屏布局：底部面板展开时，把画布缩到上方可见区域。
+ * 直接改画布尺寸（而不是移动相机），这样相机会按新宽高比自然重新取景，
+ * 模型不会被面板盖住下半身。
+ */
+function applyLayout() {
+  const narrow = window.innerWidth <= 720;
+  const collapsed = document.body.classList.contains('panel-collapsed');
+  const panelRatio = window.innerWidth <= 420 ? 0.5 : 0.46;
+  const panelH = narrow && !collapsed ? Math.min(window.innerHeight * panelRatio, 420) : 0;
+  const w = window.innerWidth;
+  const h = Math.max(240, window.innerHeight - panelH);
+
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(w, h);
+  outlineEffect.setSize(w, h);
+  camera.aspect = w / h;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  outlineEffect.setSize(window.innerWidth, window.innerHeight);
+  controls.update();
+}
+window.__applyLayout = applyLayout;
+
+window.addEventListener('resize', () => {
+  // 窄屏的面板高度也会变，统一走 applyLayout
+  applyLayout();
+  if (window.innerWidth <= 720 && !document.body.classList.contains('panel-collapsed')) {
+    setTimeout(applyLayout, 240);
+  }
 });
 
 // ---------- 启动 ----------
@@ -1608,6 +1645,8 @@ window.__poser = {  scene,
     return ui.applyPoseData(await res.json());
   },
 };
+
+
 
 
 

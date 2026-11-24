@@ -385,18 +385,138 @@ input[type='range']::-moz-range-thumb {
   text-align: left;
 }
 
+/* ---------- 窄屏：面板改成可收起的底部抽屉 ---------- */
+.panel-toggle {
+  display: none;
+}
+
 @media (max-width: 720px) {
+  /* 面板变底部抽屉，默认只占 46vh，可整块收起 */
   #panel {
     top: auto;
     right: 8px;
     left: 8px;
     bottom: 8px;
     width: auto;
-    max-height: 52vh;
+    max-height: 46vh;
+    padding: 12px;
+    border-radius: 14px;
+    transition: transform 0.22s ease, opacity 0.22s ease;
+  }
+
+  body.panel-collapsed #panel {
+    transform: translateY(calc(100% + 20px));
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .panel-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    right: 12px;
+    bottom: 14px;
+    z-index: 45;
+    padding: 9px 16px;
+    font: inherit;
+    font-size: 13px;
+    color: var(--text);
+    background: color-mix(in srgb, var(--panel) 92%, transparent);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+  }
+
+  /* 面板收起后按钮贴底；展开时跟着面板抬起来 */
+  body:not(.panel-collapsed) .panel-toggle {
+    bottom: calc(46vh + 18px);
   }
 
   #hint {
     display: none;
+  }
+
+  /* 进度条移到顶部，避免和底部抽屉打架 */
+  .load-progress {
+    top: 14px;
+    bottom: auto;
+    width: min(280px, 74vw);
+  }
+
+  /* 面板内控件更紧凑 */
+  #panel h2,
+  #panel h3 {
+    font-size: 13px;
+  }
+
+  #panel .block,
+  #panel .group {
+    padding: 8px 0;
+  }
+
+  .modellib-panel {
+    padding: 18px 14px 32px;
+  }
+
+  .modellib-head h1 {
+    font-size: 18px;
+  }
+
+  .modellib-head input[type='search'] {
+    min-width: 140px;
+  }
+
+  .modellib-grid {
+    grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+    gap: 10px;
+  }
+
+  .gallery-head {
+    gap: 8px;
+  }
+
+  .gallery-head h2 {
+    font-size: 16px;
+  }
+
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+
+  .modelmeta-body,
+  .exportpng-body {
+    grid-template-columns: 1fr;
+  }
+
+  .expr-list {
+    max-height: 150px;
+  }
+}
+
+/* 超窄屏（手机竖屏）再收一档 */
+@media (max-width: 420px) {
+  #panel {
+    max-height: 50vh;
+    padding: 10px;
+  }
+
+  body:not(.panel-collapsed) .panel-toggle {
+    bottom: calc(50vh + 18px);
+  }
+
+  .modellib-grid {
+    grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+  }
+
+  .view-presets .btn {
+    min-width: 54px;
+    padding: 5px 6px;
+  }
+
+  .expr-row {
+    grid-template-columns: 72px 1fr 34px;
   }
 }
 
@@ -1142,6 +1262,11 @@ body.pose-locked [data-pose] {
 }
 
 /* ---------- 加载进度 ---------- */
+/* 自定义 display 会盖掉 UA 的 [hidden]{display:none}，必须显式补一条 */
+.load-progress[hidden] {
+  display: none;
+}
+
 .load-progress {
   position: fixed;
   left: 50%;
@@ -1176,3 +1301,5 @@ body.pose-locked [data-pose] {
   color: #cfe0ff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
+
+

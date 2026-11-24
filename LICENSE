@@ -19,16 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-注意：本许可证只覆盖本仓库的**源代码与自制数据**（姿势 JSON、动作 VMD、文档）。
-
-不覆盖也不代表授权任何第三方内容：
-
-- 各游戏角色的 PMX/VRM 模型及其贴图（版权归原厂／模型作者，仓库中不含）
-- 模之屋（AplayBox）等站点上的模型页面与资源
-- MediaPipe 运行时（Apache-2.0，由 Google 发布）
-- three.js、@pixiv/three-vrm、mmd-parser 等依赖（各自的许可证见 package.json）
-
-使用本项目时请自行确认所加载模型的授权条款。

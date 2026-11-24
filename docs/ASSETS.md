@@ -40,3 +40,20 @@ MediaPipe 由 Google 发布，Apache-2.0 许可。
 - 全部源代码（`src/`、`scripts/`）
 - 姿势 JSON（`public/poses/`）——由本项目生成或手工制作
 - 文档（`README.md`、`docs/`、`项目管理/` 若包含）
+- 动作 VMD（`public/motions/`）——由 `scripts/make-idle-vmd.mjs` 生成
+
+## 5. 许可证范围说明
+
+仓库的 `LICENSE` 是 **MIT**，只覆盖上面第 4 节列出的内容（本项目自己写的代码与数据）。
+
+**不覆盖、也不代表授权**任何第三方内容：
+
+| 内容 | 版权/许可 |
+| --- | --- |
+| 各游戏角色的 PMX/VRM 模型与贴图 | 版权归原厂与模型作者；`使用规则.txt` 通常写"禁止二次配布"，因此**不在仓库里** |
+| 模之屋（AplayBox）等站点的页面与资源 | 仅收录**页面链接**（`public/catalog/`），不托管文件 |
+| MediaPipe 运行时 | Apache-2.0（Google），部署时从官方 CDN/包内获取 |
+| three.js / @pixiv/three-vrm / mmd-parser | 各自许可证，见 `package.json` 依赖 |
+
+使用本项目加载任何模型前，请自行确认该模型的授权条款。
+

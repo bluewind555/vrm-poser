@@ -913,4 +913,9 @@ vrm-poser/
 3. 加第二个角色，验证同一份 JSON 能正确驱动它
 4. PMX 侧还可以补：MMD 物理（SpringBone/刚体）、表情 morph、`腕捩` 扭转分配（改善大角度抬臂时的袖子变形）
 
+## 许可证
+
+[MIT](LICENSE) —— 只覆盖本仓库的源代码与自制数据（姿势 JSON、生成的 VMD、文档）。
+
+**不覆盖**任何第三方模型、贴图与站点资源，详见 [docs/ASSETS.md](docs/ASSETS.md) 第 5 节。
 

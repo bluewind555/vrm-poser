@@ -119,7 +119,7 @@ MMD 的 toon 材质（`.sph` / `.spa` / toon 贴图）在 Blender 里会变成�
 3. 导出后**立刻**自检：
 
 ```powershell
-cd "D:\DeepSeek Harness\vrm-poser"
+cd vrm-poser
 # 把导出的 .vrm 放进 public/models/
 npm run dev
 # 浏览器打开 http://localhost:5273/?model=/models/你的模型.vrm
@@ -157,3 +157,4 @@ npm run dev
 - 用 **VRoid Studio**（免费）捏一个角色，直接导出 VRM——10 分钟就能拿到一个可用的测试模型
 
 对"验证姿势管线"这个目标来说，先拿一个 VRoid 角色跑通，比啃 MMD 转换划算得多。
+

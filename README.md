@@ -69,7 +69,7 @@ $env:PREFIX='/vrm-poser/'; node scripts/serve-dist.mjs    # 打开 http://127.0.
 ## 快速开始
 
 ```powershell
-cd "D:\DeepSeek Harness\vrm-poser"
+cd vrm-poser
 npm install
 npm run dev
 ```
@@ -896,4 +896,5 @@ vrm-poser/
 2. 用你自己的模型重摆 3 个预设并另存 → 这才是你的基线数据
 3. 加第二个角色，验证同一份 JSON 能正确驱动它
 4. PMX 侧还可以补：MMD 物理（SpringBone/刚体）、表情 morph、`腕捩` 扭转分配（改善大角度抬臂时的袖子变形）
+
 

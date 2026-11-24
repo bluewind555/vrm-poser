@@ -1,8 +1,9 @@
+import os
 from PIL import Image, ImageChops
 import numpy as np
 import sys, os
 
-root = r"D:\DeepSeek Harness\vrm-poser\shots"
+root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "shots")
 a = Image.open(os.path.join(root, "xun-sph-on.png")).convert("RGB")
 b = Image.open(os.path.join(root, "xun-sph-off.png")).convert("RGB")
 
@@ -28,3 +29,4 @@ canvas.paste(ca, (w + 12, 0))
 out = os.path.join(root, "sph-compare.png")
 canvas.save(out)
 print("saved", out)
+

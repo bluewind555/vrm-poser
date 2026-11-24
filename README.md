@@ -1,3 +1,20 @@
+# VRM 姿势台
+
+[![Deploy](https://github.com/bluewind555/vrm-poser/actions/workflows/deploy.yml/badge.svg)](https://github.com/bluewind555/vrm-poser/actions/workflows/deploy.yml)
+[![在线体验](https://img.shields.io/badge/%E5%9C%A8%E7%BA%BF%E4%BD%93%E9%AA%8C-bluewind555.github.io%2Fvrm--poser-6ea8fe)](https://bluewind555.github.io/vrm-poser/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+![three.js](https://img.shields.io/badge/three.js-r187-black)
+![Vite](https://img.shields.io/badge/Vite-8-646cff)
+
+浏览器里的**角色姿势台**：加载 PMX / VRM 模型，摆姿势、播动作、调表情、360° 观察，导出透明底 PNG。
+
+> 线上版是**播放器**形态——不含任何模型，由你自己拖入（模型有版权，不在仓库里）。
+> 本地开发时可以把模型放进 `public/models/`，功能更完整（能存盘、能编辑元数据）。
+
+**在线体验**：https://bluewind555.github.io/vrm-poser/
+
+---
+
 ## 在线部署（GitHub Pages）
 
 仓库里带了 `.github/workflows/deploy.yml`，推到 `main` 自动构建并发布。
@@ -54,7 +71,6 @@ $env:PREFIX='/vrm-poser/'; node scripts/serve-dist.mjs    # 打开 http://127.0.
 > 线上是**播放器**形态：不带内容，用户拖自己的模型进去。这也正是那些模型
 > "禁止二次配布"条款下唯一合规的发布方式。
 
-# VRM 姿势台（vrm-poser）
 
 用 **VRM 归一化人形骨骼** 驱动的网页姿势台：一份姿势 JSON，套到任意 VRM 角色上。
 

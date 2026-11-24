@@ -1,16 +1,16 @@
 import puppeteer from 'puppeteer-core';
 
 const CDP = process.env.CDP_URL || 'http://127.0.0.1:9240';
-const BASE = 'http://127.0.0.1:5281/vrm-poser/';
+const BASE = process.env.PAGES_URL || 'http://127.0.0.1:5281/vrm-poser/';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const browser = await puppeteer.connect({ browserURL: CDP, defaultViewport: null });
 const page = await browser.newPage();
 const failed = [];
-page.on('requestfailed', (r) => failed.push(r.url().split('/vrm-poser/').pop() || r.url()));
+page.on('requestfailed', (r) => failed.push(r.url() || r.url()));
 page.on('pageerror', (e) => console.log('[pageerror]', e.message));
 page.on('response', (r) => {
-  if (r.status() >= 400) failed.push(r.status() + ' ' + r.url().split('/vrm-poser/').pop());
+  if (r.status() >= 400) failed.push(r.status() + ' ' + r.url());
 });
 
 try {
@@ -46,4 +46,5 @@ try {
   await page.close().catch(() => {});
   await browser.disconnect();
 }
+
 

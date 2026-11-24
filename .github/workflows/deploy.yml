@@ -3,6 +3,11 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - 'docs/**'
+      - '.gitignore'
   workflow_dispatch:
 
 permissions:
@@ -63,3 +68,4 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+

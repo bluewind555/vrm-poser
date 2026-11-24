@@ -1,5 +1,6 @@
 import { getThumb, setThumb as saveThumb } from './thumbs.js';
 import { listLocalModels } from './modelStore.js';
+import { assetUrl } from './assets.js';
 
 /**
  * 角色库：首屏的模型选择界面。
@@ -29,7 +30,7 @@ export function createModelLibrary({ onPick, onDelete, onEdit, setStatus }) {
     if (index) return index;
     let disk = { games: [], models: [] };
     try {
-      const res = await fetch('/models/index.json');
+      const res = await fetch(assetUrl('/models/index.json'));
       if (res.ok) disk = await res.json();
     } catch (err) {
       console.warn('[modellib] 索引读取失败', err);

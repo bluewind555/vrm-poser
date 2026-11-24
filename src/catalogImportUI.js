@@ -1,4 +1,5 @@
 import { parseCatalogText, addExtraEntries, loadExtraEntries, saveExtraEntries } from './catalogImport.js';
+import { assetUrl } from './assets.js';
 
 /**
  * 导入面板：粘贴 → 预览 → 导入（存 localStorage）→ 可导出完整 JSON 落盘。
@@ -56,7 +57,7 @@ export function createCatalogImportUI({ onImported, setStatus }) {
     // 合并：仓库里的 catalog + 本地新增
     let fileEntries = [];
     try {
-      const res = await fetch('/catalog/models.json');
+      const res = await fetch(assetUrl('/catalog/models.json'));
       if (res.ok) {
         const data = await res.json();
         fileEntries = Array.isArray(data.entries) ? data.entries : [];

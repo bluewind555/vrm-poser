@@ -8,6 +8,8 @@ const projectRoot = path.resolve(here, '..');
 // 先查构建产物，再回落到 public/（模型太大，不再复制进 dist）
 const ROOTS = [path.join(projectRoot, 'dist'), path.join(projectRoot, 'public')];
 const port = Number(process.env.PORT || 5280);
+// PREFIX 用来模拟 GitHub Pages 的项目站点（/vrm-poser/），本地验证 base 路径
+const prefix = (process.env.PREFIX || '').replace(/\/$/, '');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -44,6 +46,19 @@ function findFile(rel) {
 http
   .createServer((req, res) => {
     let rel = decodeURIComponent((req.url || '/').split('?')[0]);
+    if (prefix) {
+      if (rel === prefix) {
+        res.writeHead(302, { Location: prefix + '/' });
+        res.end();
+        return;
+      }
+      if (!rel.startsWith(prefix + '/')) {
+        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('404 (prefix ' + prefix + ')');
+        return;
+      }
+      rel = rel.slice(prefix.length);
+    }
     if (rel === '/') rel = '/index.html';
     const hit = findFile(rel);
     if (!hit) {

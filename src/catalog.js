@@ -1,6 +1,7 @@
 import { getThumb } from './thumbs.js';
 import { loadExtraEntries, getHidden, hideEntry, removeExtraEntry, unhideAll } from './catalogImport.js';
 import { listLocalModels } from './modelStore.js';
+import { assetUrl } from './assets.js';
 
 /**
  * 模型目录：只放"去模之屋下载"的入口，不含模型文件。
@@ -38,8 +39,8 @@ export function createCatalog({ onPick, setStatus }) {
   async function load() {
     if (entries) return;
     const [cat, idx, local] = await Promise.all([
-      fetch('/catalog/models.json').then((r) => (r.ok ? r.json() : { entries: [] })).catch(() => ({ entries: [] })),
-      fetch('/models/index.json').then((r) => (r.ok ? r.json() : { models: [] })).catch(() => ({ models: [] })),
+      fetch(assetUrl('/catalog/models.json')).then((r) => (r.ok ? r.json() : { entries: [] })).catch(() => ({ entries: [] })),
+      fetch(assetUrl('/models/index.json')).then((r) => (r.ok ? r.json() : { models: [] })).catch(() => ({ models: [] })),
       listLocalModels(),
     ]);
     const fileEntries = Array.isArray(cat.entries) ? cat.entries : [];

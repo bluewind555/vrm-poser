@@ -1,5 +1,6 @@
 import { getThumb, setThumb, clearThumbs } from './thumbs.js';
 import { getOverride, hasOverride, countOverrides } from './poseStore.js';
+import { assetUrl } from './assets.js';
 
 /**
  * 姿势库画廊：卡片网格 + 搜索 + 缩略图懒烘焙。
@@ -39,7 +40,7 @@ export function createGallery({ bakeThumb, onApply, setStatus, getCacheKey, onEd
   async function loadManifest() {
     if (poses) return poses;
     try {
-      const res = await fetch('/poses/manifest.json');
+      const res = await fetch(assetUrl('/poses/manifest.json'));
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       poses = Array.isArray(data.poses) ? data.poses : [];

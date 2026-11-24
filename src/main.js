@@ -24,6 +24,7 @@ import { createExportUI } from './exportUI.js';
 import { createMotion } from './motions.js';
 import { parseVmdBuffer } from './vmd.js';
 import { setOverride, clearOverride, getOverride, getOverrideStamp } from './poseStore.js';
+import { assetUrl } from './assets.js';
 
 const APP_VERSION = 'v47 · 2026-11-24';
 const canvas = document.querySelector('#view');
@@ -786,7 +787,7 @@ async function bakeThumb(poseEntry) {
   if (!avatar) return null;
   let res;
   try {
-    res = await fetch(poseEntry.file);
+    res = await fetch(assetUrl(poseEntry.file));
     if (!res.ok) return null;
   } catch {
     return null;
@@ -892,11 +893,12 @@ async function loadSilentModel(model) {
     };
     return loadPMX(URL.createObjectURL(blob), resolveTexture);
   }
-  const clean = model.file.split('?')[0].toLowerCase();
+  const url = assetUrl(model.file);
+  const clean = url.split('?')[0].toLowerCase();
   if (clean.endsWith('.pmx')) {
-    return loadPMX(model.file, model.file.slice(0, model.file.lastIndexOf('/') + 1));
+    return loadPMX(url, url.slice(0, url.lastIndexOf('/') + 1));
   }
-  return loadVRM(model.file, model.name);
+  return loadVRM(url, model.name);
 }
 
 /** 等模型贴图解码完再截图，否则会拍到一片黑（浔的 TGA 贴图尤其明显） */
@@ -936,7 +938,7 @@ async function bakeLibraryThumbs() {
         scene.add(temp.root);
         temp.root.updateMatrixWorld(true);
         // 摆个自然站姿再拍，比 T-pose 好看（applyPose 已在文件顶部静态导入）
-        const idle = await fetch('/poses/neutral.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        const idle = await fetch(assetUrl('/poses/neutral.json')).then((r) => (r.ok ? r.json() : null)).catch(() => null);
         if (idle && temp.humanoid) applyPose(temp.humanoid, idle);
         await waitForTextures(temp);
         await new Promise((r) => requestAnimationFrame(r));
@@ -1037,7 +1039,7 @@ async function exportPng({ longEdge = 0, transparent = true, background = '#1214
 // 角色库 / 模型目录共用：选中一个本机模型 → 加载 + 补缩略图
 async function openModel(model) {
   ui.setStatus(`加载中：${model.name}…`);
-  const a = model.source === 'local' ? await loadLocalModel(model) : await loadFromUrl(model.file, model.name);
+  const a = model.source === 'local' ? await loadLocalModel(model) : await loadFromUrl(assetUrl(model.file), model.name);
   if (!a) {
     ui.setStatus(`加载失败：${model.name}`, 'error');
     return;
@@ -1172,7 +1174,7 @@ for (const [id, url, label] of [
   ['btn-motion-vmd1', '/motions/idle-breathe.vmd', '待机A（呼吸）'],
   ['btn-motion-vmd2', '/motions/idle-sway.vmd', '待机B（轻晃）'],
 ]) {
-  document.getElementById(id)?.addEventListener('click', () => loadVmdUrl(url, label));
+  document.getElementById(id)?.addEventListener('click', () => loadVmdUrl(assetUrl(url), label));
 }
 
 document.getElementById('btn-motion-stop')?.addEventListener('click', () => {
@@ -1338,8 +1340,8 @@ async function restoreMotion(motion) {
     startMotion(m);
     return true;
   }
-  if (motion.kind === 'vmd' && /^\/motions\//.test(motion.id)) {
-    await loadVmdUrl(motion.id, motion.name ?? 'VMD');
+  if (motion.kind === 'vmd' && /\/motions\//.test(motion.id)) {
+    await loadVmdUrl(assetUrl(motion.id), motion.name ?? 'VMD');
     return true;
   }
   if (motion.kind === 'vmd') {

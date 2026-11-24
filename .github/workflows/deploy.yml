@@ -1,0 +1,65 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: 清空模型索引（模型不入库，线上从零开始）
+        run: node scripts/ci-empty-index.mjs
+
+      - name: 准备 MediaPipe 资源（图片转姿势用；仓库里不含，构建时下载）
+        run: |
+          mkdir -p public/models/mediapipe/wasm
+          cp -r node_modules/@mediapipe/tasks-vision/wasm/. public/models/mediapipe/wasm/
+          curl -fsSL -o public/models/mediapipe/pose_landmarker_lite.task \
+            https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task
+          ls -la public/models/mediapipe public/models/mediapipe/wasm | head -20
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+          VITE_COPY_PUBLIC: '1'
+
+      - name: 关掉 Jekyll（否则下划线开头的资源会 404）
+        run: touch dist/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

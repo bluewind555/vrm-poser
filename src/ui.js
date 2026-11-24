@@ -11,13 +11,14 @@ import {
   setHipsOffset,
   snapToGround,
 } from './pose.js';
+import { assetUrl } from './assets.js';
 
 const STORAGE_KEY = 'vrm-poser:presets';
 
 const BUILTIN = [
-  { id: 'neutral', label: '自然站立', file: '/poses/neutral.json' },
-  { id: 'wave', label: '招手', file: '/poses/wave.json' },
-  { id: 'sit', label: '坐姿', file: '/poses/sit.json' },
+  { id: 'neutral', label: '自然站立', file: assetUrl('/poses/neutral.json') },
+  { id: 'wave', label: '招手', file: assetUrl('/poses/wave.json') },
+  { id: 'sit', label: '坐姿', file: assetUrl('/poses/sit.json') },
 ];
 
 const AXES = ['x', 'y', 'z'];

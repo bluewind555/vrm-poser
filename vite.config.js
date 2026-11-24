@@ -149,12 +149,19 @@ function modelSaverPlugin() {
 }
 
 export default defineConfig({
+  // GitHub Pages 的项目站点跑在 /<repo>/ 子路径下，用环境变量注入：
+  //   VITE_BASE=/vrm-poser/ npm run build
+  // 本地开发/预览保持 '/'。
+  base: process.env.VITE_BASE || '/',
   plugins: [modelSaverPlugin()],
   build: {
-    // 不把 public/ 复制进 dist：
+    // 本地构建不把 public/ 复制进 dist：
     // public/models 下有上百 MB 的第三方模型，每次构建都拷一份既慢又占地。
     // 静态服务器（scripts/serve-dist.mjs）会先查 dist、再回落到 public。
-    copyPublicDir: false,
+    //
+    // 部署到 Pages 时必须复制（那边没有回落机制），CI 里设 VITE_COPY_PUBLIC=1；
+    // CI 上 public/models 是空的（模型不入库），所以不会拷出大文件。
+    copyPublicDir: process.env.VITE_COPY_PUBLIC === '1',
   },
 });
 

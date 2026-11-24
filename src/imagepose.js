@@ -1,4 +1,5 @@
 import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
+import { assetUrl } from './assets.js';
 
 /**
  * 浏览器内的单图姿态估计（MediaPipe Pose Landmarker）。
@@ -10,10 +11,10 @@ let landmarkerPromise = null;
 function createLandmarker() {
   if (!landmarkerPromise) {
     landmarkerPromise = (async () => {
-      const fileset = await FilesetResolver.forVisionTasks('/models/mediapipe/wasm');
+      const fileset = await FilesetResolver.forVisionTasks(assetUrl('/models/mediapipe/wasm'));
       const make = (delegate) =>
         PoseLandmarker.createFromOptions(fileset, {
-          baseOptions: { modelAssetPath: '/models/mediapipe/pose_landmarker_lite.task', delegate },
+          baseOptions: { modelAssetPath: assetUrl('/models/mediapipe/pose_landmarker_lite.task'), delegate },
           runningMode: 'IMAGE',
           numPoses: 1,
         });

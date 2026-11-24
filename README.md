@@ -1,3 +1,59 @@
+## 在线部署（GitHub Pages）
+
+仓库里带了 `.github/workflows/deploy.yml`，推到 `main` 自动构建并发布。
+
+### 前提
+
+1. **仓库必须是公开的**（Pages for private repos 需要 GitHub Pro/Team）
+2. Settings → Pages → Source 选 **GitHub Actions**
+3. 首次推送后工作流自动跑，地址是 `https://<用户名>.github.io/vrm-poser/`
+
+### 工作流做了什么
+
+```
+npm ci
+node scripts/ci-empty-index.mjs      # 清空模型索引（模型不入库）
+下载 MediaPipe wasm + 模型到 public/models/mediapipe
+VITE_BASE=/vrm-poser/ VITE_COPY_PUBLIC=1 npm run build
+touch dist/.nojekyll                 # 否则下划线开头的资源 404
+upload-pages-artifact → deploy-pages
+```
+
+### 子路径适配
+
+Pages 项目站点跑在 `/<repo>/` 下，所以所有资源路径都不能写死 `/models/...`。
+统一走 `assetUrl()`（`src/assets.js`）：
+
+```js
+// '/models/index.json' → '/vrm-poser/models/index.json'
+fetch(assetUrl('/models/index.json'));
+```
+
+覆盖的位置：模型索引、姿势清单与单个姿势、目录 JSON、内置 VMD、MediaPipe 资源、
+以及 index.json 里记录的模型 `file` 路径。
+
+本地可以用同样的方式验证：
+
+```powershell
+$env:VITE_BASE='/vrm-poser/'; $env:VITE_COPY_PUBLIC='1'; npm run build
+$env:PREFIX='/vrm-poser/'; node scripts/serve-dist.mjs    # 打开 http://127.0.0.1:5280/vrm-poser/
+```
+
+实测（模拟 Pages）：`13 / 13 个姿势` 正常加载，0 个失败请求。
+
+### 线上版本和本地的差别
+
+| 能力 | 本地 `npm run dev` | 线上 Pages |
+| --- | --- | --- |
+| 角色库 | 读 `public/models` 磁盘 | **空的**（模型有版权，不入库） |
+| 导入模型 | 写磁盘 + 自动重扫 | 存浏览器 IndexedDB（刷新还在，换设备丢） |
+| 编辑元数据 / 删除磁盘模型 | ✅ | ❌（没有服务端） |
+| 姿势库 / 表情 / 动作 / 导出 PNG | ✅ | ✅ 完全一样 |
+| 图片转姿势 | ✅ | ✅（CI 已下载 MediaPipe） |
+
+> 线上是**播放器**形态：不带内容，用户拖自己的模型进去。这也正是那些模型
+> "禁止二次配布"条款下唯一合规的发布方式。
+
 # VRM 姿势台（vrm-poser）
 
 用 **VRM 归一化人形骨骼** 驱动的网页姿势台：一份姿势 JSON，套到任意 VRM 角色上。
